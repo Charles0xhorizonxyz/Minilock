@@ -46,7 +46,15 @@ label.sw input:checked::after{transform:translateX(13px);background:var(--accent
 .phone{position:relative;aspect-ratio:9/20;background:#000;border:1px solid #22282F;border-radius:22px;
   overflow:hidden;display:flex;flex-direction:column;color:#fff;
   font-family:"Roboto",system-ui,sans-serif;container-type:inline-size}
-.phone.aod{filter:brightness(.5)}
+.phone.dim{filter:brightness(.62)}
+.phone.off{background:#000}
+.phone.off .furniture{display:none}
+.phone .offhint{position:absolute;inset:0;display:none;place-items:center;
+  font-size:3.2cqw;color:#2b2f34;letter-spacing:.2em;text-transform:uppercase}
+.phone.off .offhint{display:grid}
+.aodicons{display:flex;gap:2.4cqw;justify-content:center;padding-top:5cqw}
+.aodicons i{width:4.4cqw;height:4.4cqw;border-radius:50%;display:block;opacity:.85}
+.bigclock.small{font-size:13cqw}
 .statusbar{display:flex;justify-content:space-between;align-items:center;
   padding:3.2cqw 5cqw 0;font-size:3.1cqw;color:#e8eaed;font-weight:500}
 .statusbar .ic{display:flex;gap:1.6cqw;align-items:center;opacity:.95}
@@ -112,8 +120,13 @@ label.sw input:checked::after{transform:translateX(13px);background:var(--accent
       <button type="button" data-v="4" aria-pressed="false">Four</button>
     </div>
   </div>
-  <div class="ctl"><span>State</span>
-    <label class="sw"><input type="checkbox" id="aod"> Always-on display</label>
+  <div class="ctl"><span>Screen</span>
+    <div class="seg" id="screen" role="group" aria-label="Screen state">
+      <button type="button" data-s="awake" aria-pressed="true">Awake</button>
+      <button type="button" data-s="dim" aria-pressed="false">Dimmed</button>
+      <button type="button" data-s="always" aria-pressed="false">Always on</button>
+      <button type="button" data-s="off" aria-pressed="false">Off</button>
+    </div>
   </div>
 </div>
 
@@ -145,6 +158,14 @@ label.sw input:checked::after{transform:translateX(13px);background:var(--accent
     <div>
       <h4>Iterate without reflashing<span>the point</span></h4>
       <p>Build the OS once with the plugin hook. After that the dial ships as an ordinary APK, so new alloys, complications and layouts are a normal app update. Only GrapheneOS security releases need a rebuild, and your lock screen survives them.</p>
+    </div>
+    <div>
+      <h4>Off, dimmed or always on<span>your choice</span></h4>
+      <p>Three idle states, chosen in the companion app and written to a setting the plugin reads. <em>Dimmed is a different drawing, not the same one faded</em> &mdash; a filled dark dial disappears the moment the panel dims, so ambient throws away the ground and keeps bright strokes on black. That also costs almost nothing on OLED, where unlit pixels draw no power.</p>
+    </div>
+    <div>
+      <h4>Burn-in<span class="w">watch this</span></h4>
+      <p>Always-on at full brightness is the risky one: a static dial holding the same pixels for hours. Mitigated by the slow drift already in the screensaver, by ticking once a second rather than sweeping, and by the skeleton having far fewer lit pixels to begin with.</p>
     </div>
     <div>
       <h4>Always-on display<span>free</span></h4>
@@ -180,7 +201,7 @@ function mix(a,b,t){const x=hx(a),y=hx(b);
 const state={finish:0,ambient:false,units:"C",temp:18,cond:"clear",batt:64,charging:true,
   alerts:true,alertN:2,privacy:"senders",bottom:"power",
   on:{weather:true,alerts:true,alarm:true,event:true,battery:true,moon:true}};
-const ui={size:62,notifs:2};
+const ui={size:62,notifs:2,screen:"awake"};
 
 /* primitives */
 function circle(g,x,y,r,f){g.beginPath();g.arc(x,y,r,0,TAU);g.fillStyle=f;g.fill();}
@@ -477,28 +498,66 @@ const NOTIFS=[
   ["#FBBC04","Clock","Alarm set for 06:45"]
 ];
 function furniture(clockHTML){
-  const n=NOTIFS.slice(0,ui.notifs).map(x=>
-    '<div class="nf"><div class="av" style="background:'+x[0]+'"></div>'+
-    '<div class="tx"><div class="tt">'+x[1]+'</div><div class="bd">'+x[2]+'</div></div></div>').join("");
-  return '<div class="statusbar"><span>Turk Telekom</span>'+
-    '<span class="ic"><span>&#9724;</span><span>&#9679;</span><span>100</span></span></div>'+
+  const awake = ui.screen==="awake";
+  // On always-on display AOSP drops notification content to bare icons and hides the
+  // shortcuts and fingerprint affordance. Match that, or the mock flatters itself.
+  const body = awake
+    ? '<div class="notifs">'+NOTIFS.slice(0,ui.notifs).map(x=>
+        '<div class="nf"><div class="av" style="background:'+x[0]+'"></div>'+
+        '<div class="tx"><div class="tt">'+x[1]+'</div><div class="bd">'+x[2]+'</div></div></div>').join("")+'</div>'
+    : '<div class="notifs"><div class="aodicons">'+NOTIFS.slice(0,ui.notifs).map(x=>
+        '<i style="background:'+x[0]+'"></i>').join("")+'</div></div>';
+  const foot = awake
+    ? '<div class="bottom"><div class="shortcut">&#9788;</div>'+
+        '<div class="unlock"><div class="fp"></div><div class="charged">Charged</div></div>'+
+        '<div class="shortcut">&#9673;</div></div>'
+    : '<div class="bottom" style="justify-content:center">'+
+        '<div class="charged" style="padding-bottom:4cqw">Charged</div></div>';
+  return '<div class="furniture" style="display:flex;flex-direction:column;height:100%">'+
+    '<div class="statusbar"><span>'+(awake?'Turk Telekom':'')+'</span>'+
+    '<span class="ic">'+(awake?'<span>&#9724;</span><span>&#9679;</span><span>100</span>':'')+'</span></div>'+
     '<div class="clockzone">'+clockHTML+
       '<div class="smartspace"><span>Mon, Sep 14</span><span class="dot">&middot;</span>'+
       '<span>18&deg; Clear</span><span class="dot">&middot;</span><span>06:45</span></div>'+
-    '</div>'+
-    '<div class="notifs">'+n+'</div>'+
-    '<div class="bottom"><div class="shortcut">&#9788;</div>'+
-      '<div class="unlock"><div class="fp"></div><div class="charged">Charged</div></div>'+
-      '<div class="shortcut">&#9673;</div></div>';
+    '</div>'+body+foot+'</div><div class="offhint">screen off</div>';
 }
 const phoneA=document.getElementById("phoneA"), phoneB=document.getElementById("phoneB");
 function layout(){
   const d=new Date();
   const hh=String(d.getHours()).padStart(2,"0"), mm=String(d.getMinutes()).padStart(2,"0");
-  phoneA.innerHTML=furniture('<div class="bigclock">'+hh+'<br>'+mm+'</div>');
+  const small=ui.screen!=="awake"?" small":"";
+  phoneA.innerHTML=furniture('<div class="bigclock'+small+'">'+hh+'<br>'+mm+'</div>');
   phoneB.innerHTML=furniture('<div class="dialwrap" style="--dialw:'+ui.size+'cqw"><canvas id="dialcv"></canvas></div>');
-  phoneA.classList.toggle("aod",state.ambient);
-  phoneB.classList.toggle("aod",state.ambient);
+  for(const el of [phoneA,phoneB]){
+    el.classList.toggle("dim", ui.screen==="dim");
+    el.classList.toggle("off", ui.screen==="off");
+  }
+  staticKey="";
+}
+
+/* ---- ambient dial: bright strokes on black, nothing filled ---- */
+function ambientDial(g,F,d){
+  const gold=F.gold, light=F.light;
+  ring(g,0,0,268,rgba(gold,.30),1.4);
+  for(let i=1;i<=12;i++){
+    g.save(); g.rotate(i*30*RAD);
+    const major=i%3===0;
+    line(g,0,-234,0,major?-200:-214,rgba(light,.92),major?4.5:2.6);
+    g.restore();
+  }
+  const mins=d.getMinutes(), hrs=(d.getHours()%12)+mins/60;
+  const outline=(angle,len,w)=>{
+    g.save(); g.rotate(angle*RAD);
+    poly(g,[-w,14,-w*.9,-len+26,0,-len,w*.9,-len+26,w,14],null,rgba(light,.95),2.2);
+    g.restore();
+  };
+  outline(hrs*30,132,8);
+  outline(mins*6,194,5);
+  circle(g,0,0,7,rgba(gold,.95));
+  txt(g,"MINISCREEN",0,-150,11,rgba(gold,.5),true,"center",.30);
+  // the counters reduce to the one reading worth waking for
+  txt(g,String(d.getDate()),112,12,15,rgba(light,.8),true);
+  ring(g,112,8,30,rgba(gold,.3),1.2);
 }
 
 /* ---- the dial: the same routines SystemUI would run ---- */
@@ -513,6 +572,7 @@ function paintDial(){
   g.setTransform(RES,0,0,RES,0,0); g.clearRect(0,0,r.width,r.width);
   g.save(); g.translate(r.width/2,r.width/2); g.scale(k,k);
   g.textBaseline="alphabetic"; g.lineCap="butt"; g.lineJoin="miter";
+  if(ui.screen==="dim"){ ambientDial(g,F,new Date()); g.restore(); return; }
   const sig=[state.finish,k.toFixed(4),RES].join("|");
   if(staticKey!==sig){
     const px=Math.max(1,Math.ceil(600*k*RES));
@@ -524,7 +584,7 @@ function paintDial(){
     staticKey=sig;
   }
   g.drawImage(sc,-300,-300,600,600);
-  const d=new Date(), dim=state.ambient;
+  const d=new Date(), dim=(ui.screen!=="awake");
   weatherCounter(g,F,-112,8,state.temp);
   pointerCounter(g,F,112,8,"DATE",DATES,(d.getDate()-1)/31*360);
   powerCounter(g,F,0,119,state.batt,state.charging);
@@ -545,22 +605,24 @@ function seg(id,apply){
   box.addEventListener("click",e=>{
     const b=e.target.closest("button"); if(!b) return;
     Array.from(box.children).forEach(c=>c.setAttribute("aria-pressed",String(c===b)));
-    apply(b.dataset.v!==undefined?+b.dataset.v:+b.dataset.i);
+    apply(b.dataset.s!==undefined?b.dataset.s:
+          b.dataset.v!==undefined?+b.dataset.v:+b.dataset.i);
   });
 }
 seg("gold",v=>{state.finish=v;staticKey="";});
 seg("size",v=>{ui.size=v;layout();staticKey="";});
 seg("notifs",v=>{ui.notifs=v;layout();});
-document.getElementById("aod").addEventListener("change",e=>{
-  state.ambient=e.target.checked;
-  phoneA.classList.toggle("aod",state.ambient);
-  phoneB.classList.toggle("aod",state.ambient);
-});
+seg("screen",v=>{ui.screen=v;layout();});
 
+const _h=location.hash.match(/screen=(awake|dim|always|off)/);
+if(_h){ ui.screen=_h[1];
+  Array.from(document.getElementById('screen').children)
+    .forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.s===ui.screen))); }
 layout();
 let last=0;
 function frame(now){
-  if(now-last>(state.ambient?1000:33)){ last=now; paintDial(); }
+  if(ui.screen==="off"){ requestAnimationFrame(frame); return; }
+  if(now-last>(ui.screen==="awake"?33:1000)){ last=now; paintDial(); }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
