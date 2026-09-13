@@ -1,0 +1,19 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="Miniscreen · Atelier" android:theme="@style/AppTheme" android:icon="@drawable/ic_atelier" android:allowBackup="true" android:supportsRtl="true">
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".PreviewActivity" android:exported="false" />
+        <service android:name=".AtelierDreamService" android:label="Miniscreen · Atelier" android:exported="true" android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter><action android:name="android.service.dreams.DreamService" /></intent-filter>
+            <meta-data android:name="android.service.dream" android:resource="@xml/dream" />
+        </service>
+        <service android:name=".MiniscreenWallpaper" android:label="Miniscreen · Atelier" android:exported="true" android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter><action android:name="android.service.wallpaper.WallpaperService" /></intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/wallpaper" />
+        </service>
+    </application>
+</manifest>

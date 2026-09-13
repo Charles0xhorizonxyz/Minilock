@@ -1,0 +1,602 @@
+<title>Atelier Complications</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Noto+Serif&family=Roboto:wght@400;500&display=swap">
+<style>
+:root{
+  --ink:#07090C; --raised:#131921; --line:#1C232B; --line-soft:#151B22;
+  --text:#DFE3E8; --muted:#7C8894; --dim:#5A6572; --accent:#C9AA7C;
+  --free:#8FAE8B; --grant:#D7A96B; --net:#C98A8A;
+  --serif:"Cormorant Garamond",Georgia,serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--ink);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;
+  padding-inline:20px;padding-block:0 56px;max-width:1180px;margin:0 auto}
+
+header{padding-block:38px 24px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--serif);font-weight:300;font-size:clamp(34px,6vw,54px);line-height:1.02;margin:0;text-wrap:balance}
+.lede{color:var(--muted);margin:12px 0 0;max-width:64ch;font-size:14.5px}
+.lede em{color:var(--text);font-style:normal}
+
+.work{display:grid;grid-template-columns:minmax(0,500px) minmax(0,1fr);gap:34px;padding-block:26px}
+@media (max-width:860px){ .work{grid-template-columns:1fr} }
+.frame{position:relative;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden;aspect-ratio:3/4}
+.frame canvas{display:block;width:100%;height:100%;max-width:100%}
+.stage p{font-family:var(--mono);font-size:10px;color:var(--dim);margin:9px 0 0}
+
+.panel{display:flex;flex-direction:column;gap:18px;min-width:0}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:14px 0 0;min-width:0}
+legend{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0}
+.row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.seg{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg button{appearance:none;background:transparent;border:0;border-right:1px solid var(--line);color:var(--muted);
+  font-family:var(--sans);font-size:12.5px;padding:6px 12px;cursor:pointer;transition:color .15s,background .15s}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--raised);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+.seg button:hover{color:var(--text)}
+label.sw{display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--muted);font-size:12.5px;user-select:none}
+label.sw:hover{color:var(--text)}
+input[type=checkbox]{appearance:none;width:30px;height:17px;border-radius:9px;border:1px solid var(--line);
+  background:#0A0E13;position:relative;cursor:pointer;flex:none;transition:background .16s,border-color .16s;margin:0}
+input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;
+  background:var(--dim);transition:transform .16s,background .16s}
+input[type=checkbox]:checked{background:#251F16;border-color:#4A3E2C}
+input[type=checkbox]:checked::after{transform:translateX(13px);background:var(--accent)}
+.slider{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.slider input[type=range]{appearance:none;width:104px;height:3px;background:var(--line);border-radius:2px;cursor:pointer}
+.slider input[type=range]::-webkit-slider-thumb{appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer}
+.slider input[type=range]::-moz-range-thumb{width:13px;height:13px;border:0;border-radius:50%;background:var(--accent);cursor:pointer}
+.slider b{font-weight:500;color:var(--text);min-width:46px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.comps{border-top:1px solid var(--line);padding-block:24px 0}
+.comps h3{font-family:var(--serif);font-weight:500;font-size:25px;margin:0 0 4px}
+.comps>p{margin:0 0 16px;color:var(--muted);font-size:12.5px}
+ul.list{list-style:none;margin:0;padding:0}
+ul.list li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:3px 14px;align-items:start;
+  padding-block:13px;border-top:1px solid var(--line-soft)}
+ul.list li:first-child{border-top:0}
+ul.list input{margin-top:2px}
+.c-name{font-size:13.5px;color:var(--text);cursor:pointer}
+.c-name i{font-style:normal;font-family:var(--serif);font-size:15px;color:var(--accent);margin-left:9px}
+.c-note{grid-column:2;margin:0;color:var(--muted);font-size:12px;max-width:64ch}
+.c-note b{font-weight:400;color:var(--dim);font-family:var(--mono);font-size:11px}
+.perm{font-family:var(--mono);font-size:10px;white-space:nowrap;padding-top:3px;text-align:right}
+.perm.none{color:var(--free)} .perm.grant{color:var(--grant)} .perm.net{color:var(--net)}
+ul.list li:has(input:not(:checked)) .c-name,
+ul.list li:has(input:not(:checked)) .c-note,
+ul.list li:has(input:not(:checked)) .c-name i,
+ul.list li:has(input:not(:checked)) .perm{color:var(--dim)}
+.fixed{opacity:.72}
+
+.cost{border-top:1px solid var(--line);margin-top:24px;padding-top:20px;display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px}
+.cost h4{font-family:var(--sans);font-weight:500;font-size:12.5px;margin:0 0 6px;color:var(--text)}
+.cost h4 span{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;margin-left:8px}
+.cost p{margin:0;color:var(--muted);font-size:12px}
+.cost code{font-family:var(--mono);font-size:11px;color:var(--dim)}
+@media (max-width:560px){ .perm{display:none} ul.list li{grid-template-columns:auto 1fr} }
+</style>
+
+<header>
+  <p class="eyebrow">Miniscreen &middot; Atelier &mdash; Edition 01</p>
+  <h1>Atelier Complications</h1>
+  <p class="lede">Everything a phone shows at a glance, arranged the way a watchmaker would arrange it. Battery is a <em>power reserve</em>, weather a <em>thermometer counter</em>, the next alarm a <em>r&eacute;veil marker</em>, notifications a <em>guichet</em>. What can&rsquo;t be read as an instrument goes on the card below the dial, set like a certificate. Turn anything off &mdash; the dial is designed to be complete without it.</p>
+</header>
+
+<div class="work">
+  <div class="stage">
+    <div class="frame"><canvas id="cv" aria-label="Atelier dial with weather, power reserve, date, alarm and notification complications"></canvas></div>
+    <p id="caption">The dial gives way as the card fills: 74% of height bare, 56% at three rows</p>
+  </div>
+
+  <div class="panel">
+    <fieldset><legend>Dial</legend>
+      <div class="row">
+        <div class="seg" id="finish" role="group" aria-label="Dial finish">
+          <button type="button" data-i="0" aria-pressed="true">Midnight</button>
+          <button type="button" data-i="1" aria-pressed="false">Malachite</button>
+          <button type="button" data-i="2" aria-pressed="false">Bordeaux</button>
+        </div>
+        <label class="sw"><input type="checkbox" id="ambient"> Ambient dim</label>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Bottom counter</legend>
+      <div class="seg" id="bottom" role="group" aria-label="Bottom counter">
+        <button type="button" data-v="power" aria-pressed="true">Power reserve</button>
+        <button type="button" data-v="moon" aria-pressed="false">Moonphase</button>
+        <button type="button" data-v="h24" aria-pressed="false">24 H</button>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Sample state &mdash; drag to see how it holds up</legend>
+      <div class="row">
+        <div class="slider"><label for="temp">Temp</label><input type="range" id="temp" min="-10" max="40" value="18"><b id="tempV">18&deg;C</b></div>
+        <div class="seg" id="units" role="group" aria-label="Units">
+          <button type="button" data-v="C" aria-pressed="true">&deg;C</button>
+          <button type="button" data-v="F" aria-pressed="false">&deg;F</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="seg" id="cond" role="group" aria-label="Condition">
+          <button type="button" data-v="clear" aria-pressed="true">Clear</button>
+          <button type="button" data-v="cloud" aria-pressed="false">Cloud</button>
+          <button type="button" data-v="rain" aria-pressed="false">Rain</button>
+          <button type="button" data-v="snow" aria-pressed="false">Snow</button>
+          <button type="button" data-v="storm" aria-pressed="false">Storm</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="slider"><label for="batt">Battery</label><input type="range" id="batt" min="0" max="100" value="64"><b id="battV">64%</b></div>
+        <label class="sw"><input type="checkbox" id="charging"> Charging</label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="slider"><label for="alerts">Alerts</label><input type="range" id="alerts" min="0" max="12" value="3"><b id="alertsV">3</b></div>
+        <div class="seg" id="privacy" role="group" aria-label="Alert detail">
+          <button type="button" data-v="count" aria-pressed="false">Count</button>
+          <button type="button" data-v="senders" aria-pressed="true">Senders</button>
+          <button type="button" data-v="full" aria-pressed="false">Full text</button>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+</div>
+
+<section class="comps">
+  <h3>Nine complications</h3>
+  <p>Four cost nothing. Three need a permission this app has never asked for.</p>
+  <ul class="list" id="compList"></ul>
+</section>
+
+<div class="cost">
+  <div>
+    <h4>The README promise<span style="color:var(--net)">at risk</span></h4>
+    <p>Today the manifest declares <em style="font-style:normal;color:var(--text)">no permissions at all</em>, and the README sells that: &ldquo;no network permission, accounts, advertisements, or runtime libraries.&rdquo; Weather alone ends it. Everything else on this dial can ship without touching that sentence.</p>
+  </div>
+  <div>
+    <h4>Privacy on a screensaver<span style="color:var(--grant)">by default</span></h4>
+    <p>A screensaver runs while the phone sits on a desk in a room with other people. Alerts default to senders, never bodies, and the guichet and card rows are suppressed entirely in ambient mode.</p>
+  </div>
+  <div>
+    <h4>Burn-in<span style="color:var(--free)">handled</span></h4>
+    <p>Card text is the highest-contrast thing on a mostly black screen. It rides the same slow drift as the dial, and the whole card dims with ambient, so no glyph holds one pixel. <code>saveLayerAlpha(&hellip;, 125)</code></p>
+  </div>
+</div>
+
+<script>
+"use strict";
+const TAU = Math.PI*2, RAD = Math.PI/180;
+const RES = Math.min(3,(window.devicePixelRatio||1)*2);
+const SERIF='"Noto Serif", Georgia, serif', SANS='"Roboto", system-ui, sans-serif';
+
+const FINISHES=[
+  {gold:"#C9AA7C",light:"#F1DEC0",dial:"#142B40"},
+  {gold:"#BFC9C9",light:"#F1F4EC",dial:"#16372E"},
+  {gold:"#D3A28D",light:"#FFE0CA",dial:"#302225"}
+];
+const DAYS=["M","T","W","T","F","S","S"], DATES=["1","5","10","15","20","25"], HOURS=["0","4","8","12","16","20"];
+const GARNET="#9E4A46";
+
+const COMPS=[
+  {key:"time",   fixed:true,  name:"Hours, minutes, seconds", horo:"Heures", slot:"Centre",
+   note:"Unchanged. Sweeping seconds at 30fps, hidden in ambient.", perm:"None", lvl:"none"},
+  {key:"date",   fixed:true,  name:"Date", horo:"Quantième", slot:"Right counter",
+   note:"Pointer date on a 31-division counter. The day name moved to the card, so the left counter could be freed.", perm:"None", lvl:"none"},
+  {key:"battery",on:true,     name:"Battery", horo:"Réserve de marche", slot:"Bottom counter",
+   note:"The complication horology already had for exactly this idea: how much running is left. Charging traces the remaining arc in gold and lights a pip at full. <b>BatteryManager.EXTRA_LEVEL</b>", perm:"None", lvl:"none"},
+  {key:"alarm",  on:true,     name:"Next alarm", horo:"Réveil", slot:"Chapter ring",
+   note:"A garnet pip at the alarm’s hour angle, the way an alarm watch marks its set time, plus the exact time on the card. <b>AlarmManager.getNextAlarmClock()</b>", perm:"None", lvl:"none"},
+  {key:"moon",   on:true,     name:"Moonphase", horo:"Phase de lune", slot:"Bottom counter",
+   note:"Computed from the synodic month — no data source of any kind. Offered as an alternative to the power reserve.", perm:"None", lvl:"none"},
+  {key:"weather",on:true,     name:"Weather", horo:"Thermomètre", slot:"Left counter",
+   note:"Pointer on a −10…40° arc with the condition drawn at the centre. Falls back to the day-of-week counter when off, so the dial never shows a hole. <b>Open-Meteo, no API key</b>", perm:"INTERNET · COARSE_LOCATION", lvl:"net"},
+  {key:"alerts", on:true,     name:"Notifications", horo:"Guichet", slot:"Aperture at 12",
+   note:"Count in a recessed window under the hands; senders on the card. Suppressed in ambient mode. <b>NotificationListenerService</b>", perm:"Notification access", lvl:"grant"},
+  {key:"event",  on:true,     name:"Next event", horo:"—", slot:"Card",
+   note:"Time and title of the next calendar entry. Nothing analogue about it, so it stays typographic. <b>CalendarContract.Instances</b>", perm:"READ_CALENDAR", lvl:"grant"},
+  {key:"media",  on:false,    name:"Now playing", horo:"—", slot:"Card",
+   note:"Track and artist from the active session. Off by default — it changes too often for a screensaver and draws the eye.", perm:"Notification access", lvl:"grant"}
+];
+
+const state={
+  finish:0, ambient:false, bottom:"power", units:"C",
+  temp:18, cond:"clear", batt:64, charging:false, alerts:3, privacy:"senders",
+  on:Object.fromEntries(COMPS.map(c=>[c.key, c.fixed ? true : !!c.on]))
+};
+
+const hx=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+function rgba(h,a){const c=hx(h);return "rgba("+c[0]+","+c[1]+","+c[2]+","+a+")";}
+function mix(h1,h2,t){const a=hx(h1),b=hx(h2);
+  return "rgb("+Math.round(a[0]+(b[0]-a[0])*t)+","+Math.round(a[1]+(b[1]-a[1])*t)+","+Math.round(a[2]+(b[2]-a[2])*t)+")";}
+
+/* primitives */
+function circle(g,x,y,r,f){g.beginPath();g.arc(x,y,r,0,TAU);g.fillStyle=f;g.fill();}
+function ring(g,x,y,r,s,w){g.beginPath();g.arc(x,y,r,0,TAU);g.strokeStyle=s;g.lineWidth=w;g.stroke();}
+function arc(g,x,y,r,a0,a1,s,w,cap){g.beginPath();g.arc(x,y,r,a0,a1);g.strokeStyle=s;g.lineWidth=w;g.lineCap=cap||"butt";g.stroke();g.lineCap="butt";}
+function line(g,x1,y1,x2,y2,s,w){g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.strokeStyle=s;g.lineWidth=w;g.stroke();}
+function poly(g,p,f,s,w){g.beginPath();g.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)g.lineTo(p[i],p[i+1]);g.closePath();
+  if(f){g.fillStyle=f;g.fill();} if(s){g.strokeStyle=s;g.lineWidth=w;g.stroke();}}
+function rrect(g,x,y,w,h,r,f){g.beginPath();g.roundRect(x,y,w,h,r);g.fillStyle=f;g.fill();}
+function rect(g,x,y,w,h,f){g.fillStyle=f;g.fillRect(x,y,w,h);}
+function txt(g,s,x,y,size,color,serif,align,ls){
+  g.fillStyle=color; g.font=size+"px "+(serif?SERIF:SANS);
+  g.textAlign=align||"center";
+  if("letterSpacing" in g) g.letterSpacing=(ls||0)+"em";   // ports to Paint.setLetterSpacing
+  g.fillText(s,x,y);
+  if("letterSpacing" in g) g.letterSpacing="0em";
+  g.textAlign="center";
+}
+
+/* ---------------- static dial ---------------- */
+function drawStatic(g,F){
+  const bez=g.createLinearGradient(-260,-280,220,290);
+  bez.addColorStop(0,"#302E2B");bez.addColorStop(.25,F.light);bez.addColorStop(.5,"#685A46");
+  bez.addColorStop(.75,F.gold);bez.addColorStop(1,"#24282B");
+  circle(g,0,0,291,bez);
+  circle(g,0,0,282,"#11171D");
+  const re=g.createLinearGradient(-200,-230,180,240);
+  re.addColorStop(0,"rgba(255,255,255,.10)");re.addColorStop(.34,"rgba(255,255,255,.015)");
+  re.addColorStop(.62,"rgba(0,0,0,.30)");re.addColorStop(1,"rgba(255,255,255,.05)");
+  g.save();g.beginPath();g.arc(0,0,282,0,TAU);g.arc(0,0,270,0,TAU,true);g.clip();
+  g.fillStyle=re;g.fillRect(-291,-291,582,582);g.restore();
+  ring(g,0,0,279,F.gold,1);
+
+  const dg=g.createRadialGradient(-80,-100,0,-80,-100,480);
+  dg.addColorStop(0,F.dial);dg.addColorStop(1,"#080E17");
+  circle(g,0,0,270,dg);
+
+  g.save();g.beginPath();g.arc(0,0,246,0,TAU);g.clip();
+  if(g.createConicGradient){
+    const sh=g.createConicGradient(0,0,0);
+    for(let i=0;i<=8;i++) sh.addColorStop(i/8, i%2===0?"rgba(214,232,255,.085)":"rgba(0,0,0,.16)");
+    g.fillStyle=sh;g.fillRect(-250,-250,500,500);
+  }
+  for(let i=0;i<240;i++){g.save();g.rotate(i*TAU/240);
+    line(g,0,-36,0,-250,i%2?"rgba(216,234,255,.045)":"rgba(0,0,0,.10)",.9);g.restore();}
+  const vig=g.createRadialGradient(0,0,132,0,0,252);
+  vig.addColorStop(0,"rgba(0,0,0,0)");vig.addColorStop(.72,"rgba(0,0,0,.18)");vig.addColorStop(1,"rgba(0,0,0,.52)");
+  circle(g,0,0,248,vig);
+  g.restore();
+
+  const inn=g.createRadialGradient(0,0,228,0,0,272);
+  inn.addColorStop(0,"rgba(0,0,0,0)");inn.addColorStop(.62,"rgba(0,0,0,.26)");inn.addColorStop(1,"rgba(0,0,0,.72)");
+  circle(g,0,0,270,inn); ring(g,0,0,269,"rgba(255,255,255,.05)",1);
+
+  ring(g,0,0,246,"#53606A",.7); ring(g,0,0,239,"#333E49",.6);
+
+  for(let i=0;i<60;i++){
+    g.save();g.rotate(i*6*RAD);
+    if(i%5===0) poly(g,[-1.5,-253,1.5,-253,2.4,-265,-2.4,-265],F.gold,null,0);
+    else        line(g,0,-255,0,-261,"#8B99A4",.9);
+    g.restore();
+  }
+  for(let i=1;i<=12;i++){
+    g.save();g.rotate(i*30*RAD);
+    if(i===12){baton(g,F,-6.6,4.4);baton(g,F,6.6,4.4);} else baton(g,F,0,10);
+    g.restore();
+  }
+  txt(g,"ATELIER",0,-143,23,F.light,true,"center",.30);
+  txt(g,"MINISCREEN",0,-121,8,F.gold,false,"center",.34);
+}
+function baton(g,F,cx,w){
+  const h1=-229,h2=-201,half=w/2;
+  rrect(g,cx-half+.9,h1+1.4,w,28,1.4,"rgba(0,0,0,.55)");
+  poly(g,[cx,h1+1.2,cx+half,h1+4,cx+half,h2,cx,h2-1.2],mix(F.gold,"#000000",.46),null,0);
+  poly(g,[cx,h1+1.2,cx-half,h1+4,cx-half,h2,cx,h2-1.2],F.light,null,0);
+  poly(g,[cx-half,h1+4,cx,h1-1.4,cx+half,h1+4],mix(F.light,F.gold,.55),null,0);
+  line(g,cx,h1,cx,h2-1,"rgba(255,255,255,.42)",.7);
+  poly(g,[cx-half,h1+4,cx,h1-1.4,cx+half,h1+4,cx+half,h2,cx-half,h2],null,"rgba(0,0,0,.55)",.7);
+}
+
+/* ---------------- counters ---------------- */
+function well(g,F,x,y,r){                       // recessed, azuré counter well
+  circle(g,x,y,r,"#0B1520");
+  g.save();g.beginPath();g.arc(x,y,r-5,0,TAU);g.clip();
+  for(let i=8;i<=r-6;i+=3.2) ring(g,x,y,i,"rgba(206,226,246,.05)",.55);
+  const rec=g.createRadialGradient(x,y,r*.55,x,y,r);
+  rec.addColorStop(0,"rgba(0,0,0,0)");rec.addColorStop(1,"rgba(0,0,0,.58)");
+  circle(g,x,y,r,rec); g.restore();
+  ring(g,x,y,r,mix("#786D5E",F.gold,.5),1.3);
+  ring(g,x,y,r-2,"rgba(0,0,0,.5)",1);
+}
+function counterHand(g,F,x,y,angle,len){
+  g.save();g.translate(x,y);g.rotate(angle*RAD);
+  poly(g,[-1.3,7,-.5,-len,.5,-len,1.3,7],F.light,"rgba(0,0,0,.5)",.5);
+  circle(g,0,0,3,F.gold); g.restore();
+}
+
+function pointerCounter(g,F,x,y,title,labels,angle){   // day / date / 24h
+  well(g,F,x,y,62); ring(g,x,y,57,"#293642",1);
+  for(let i=0;i<30;i++){const a=i*Math.PI/15,s=Math.sin(a),c=Math.cos(a);
+    line(g,x+s*52,y-c*52,x+s*55,y-c*55,"#71808C",.7);}
+  for(let i=0;i<labels.length;i++){
+    const a=title==="DATE"?(parseInt(labels[i],10)-1)*TAU/31:i*TAU/labels.length;
+    txt(g,labels[i],x+Math.sin(a)*42,y-Math.cos(a)*42+3,8,F.gold,false);
+  }
+  txt(g,title,x,y+23,7,"#9DA7AC",false,"center",.12);
+  counterHand(g,F,x,y,angle,33);
+}
+
+/* Thermometer counter: sector scale, condition drawn at centre. */
+function weatherCounter(g,F,x,y,tempC){
+  well(g,F,x,y,62);
+  const A0=-126*RAD, A1=126*RAD;                       // sweep, 0 at 12 o'clock
+  const lo=-10, hi=40, t=Math.max(lo,Math.min(hi,tempC));
+  const at=v=>A0+(A1-A0)*(v-lo)/(hi-lo);
+  const toXY=(a,r)=>[x+Math.sin(a)*r, y-Math.cos(a)*r];
+  arc(g,x,y,52,at(lo)-Math.PI/2,at(hi)-Math.PI/2,"#4C5A66",.8);
+  for(let v=lo; v<=hi; v+=5){
+    const a=at(v), major=v%10===0, r0=major?45:48.5;
+    const p0=toXY(a,r0), p1=toXY(a,52.5);
+    line(g,p0[0],p0[1],p1[0],p1[1], major?F.gold:"#71808C", major?1.2:.7);
+    if(v%20===0){ const pl=toXY(a,37); txt(g,String(v),pl[0],pl[1]+3,7.5,"#9DA7AC",false); }
+  }
+  // freezing mark, in garnet — the one coloured thing on the counter
+  const fz=toXY(at(0),52.5), fz0=toXY(at(0),44);
+  line(g,fz0[0],fz0[1],fz[0],fz[1],GARNET,1.6);
+  glyph(g,F,x,y-9,state.cond);
+  txt(g,fmtTemp(tempC),x,y+30,13,F.light,true);
+  counterHand(g,F,x,y,at(t)/RAD,44);
+}
+function fmtTemp(c){ return state.units==="F" ? Math.round(c*9/5+32)+"°" : Math.round(c)+"°"; }
+
+/* Condition glyphs — plain paths, so they port to Android as Path objects. */
+function glyph(g,F,x,y,cond){
+  const L=F.light, D="#93A3B0";
+  if(cond==="clear"){
+    circle(g,x,y,7.5,L);
+    for(let i=0;i<8;i++){const a=i*TAU/8;
+      line(g,x+Math.sin(a)*10.5,y-Math.cos(a)*10.5,x+Math.sin(a)*14,y-Math.cos(a)*14,L,1.3);}
+    return;
+  }
+  const cloud=(cx,cy,s,col)=>{
+    g.beginPath();
+    g.arc(cx-5*s,cy+1*s,4.6*s,0,TAU); g.arc(cx+.5*s,cy-3*s,6.4*s,0,TAU);
+    g.arc(cx+6.5*s,cy+1*s,5*s,0,TAU); g.rect(cx-9.6*s,cy+1*s,16.2*s,4.6*s);
+    g.fillStyle=col; g.fill();
+  };
+  if(cond==="cloud"){ circle(g,x+6,y-6,6,rgba(F.gold,.5)); cloud(x-1,y,1,L); return; }
+  cloud(x,y-4,.92,D);
+  if(cond==="rain"){ for(let i=-1;i<=1;i++) line(g,x+i*6.5,y+5,x+i*6.5-2.4,y+13,"#8FB6CF",1.5); }
+  if(cond==="snow"){ for(let i=-1;i<=1;i++){const px=x+i*6.5,py=y+9;
+      for(let k=0;k<3;k++){const a=k*Math.PI/3; line(g,px-Math.sin(a)*3,py-Math.cos(a)*3,px+Math.sin(a)*3,py+Math.cos(a)*3,L,1);} } }
+  if(cond==="storm"){ poly(g,[x+1,y+4,x-5,y+14,x-.5,y+14,x-3,y+22,x+6,y+10,x+1,y+10],F.gold,null,0); }
+}
+
+/* Power reserve: 0 at left, full at right, across the top of the counter. */
+function powerCounter(g,F,x,y,pct,charging){
+  well(g,F,x,y,62);
+  const A0=-118*RAD, A1=118*RAD, at=v=>A0+(A1-A0)*v/100;
+  const toXY=(a,r)=>[x+Math.sin(a)*r,y-Math.cos(a)*r];
+  arc(g,x,y,52,A0-Math.PI/2,A1-Math.PI/2,"#4C5A66",.8);
+  // reserve consumed reads garnet at the empty end, gold where charge remains
+  arc(g,x,y,52,A0-Math.PI/2,at(Math.min(pct,18))-Math.PI/2, pct<=18?GARNET:"#5B4A46",2.6,"round");
+  arc(g,x,y,52,at(Math.max(pct,0))-Math.PI/2,A1-Math.PI/2, charging?rgba(F.gold,.42):"rgba(0,0,0,0)",2.6,"round");
+  for(let v=0;v<=100;v+=12.5){
+    const a=at(v),major=v%25===0,p0=toXY(a,major?45:48.5),p1=toXY(a,52.5);
+    line(g,p0[0],p0[1],p1[0],p1[1],major?F.gold:"#71808C",major?1.2:.7);
+  }
+  txt(g,"0",toXY(at(0),36)[0],toXY(at(0),36)[1]+3,7.5,"#9DA7AC",false);
+  txt(g,"100",toXY(at(100),36)[0],toXY(at(100),36)[1]+3,7.5,"#9DA7AC",false);
+  txt(g,"RÉSERVE",x,y+30,7,"#9DA7AC",false,"center",.12);
+  txt(g,pct+"%",x,y-6,13,pct<=18?GARNET:F.light,true);
+  if(charging){ const p=toXY(at(100),52.5);
+    poly(g,[p[0],p[1]-6,p[0]-3.4,p[1]+1,p[0]-.6,p[1]+1,p[0]-1.6,p[1]+7,p[0]+3.4,p[1]-1,p[0]+.6,p[1]-1],F.gold,null,0); }
+  counterHand(g,F,x,y,at(pct)/RAD,44);
+}
+
+/* Moonphase: synodic month, no data source at all. */
+const SYN=29.530588853*86400000, NEW0=Date.UTC(2000,0,6,18,14);
+function moonPhase(t){ let p=((t-NEW0)%SYN)/SYN; return p<0?p+1:p; }
+function moonCounter(g,F,x,y,t){
+  circle(g,x,y,62,"#060B14");
+  const sky=g.createRadialGradient(x,y-14,6,x,y,62);
+  sky.addColorStop(0,"#16283D");sky.addColorStop(1,"#050A12");
+  circle(g,x,y,60,sky);
+  for(let i=0;i<11;i++){const a=i*2.399,r=16+((i*37)%42);
+    circle(g,x+Math.cos(a)*r,y+Math.sin(a)*r*.8,i%3?.9:1.4,rgba(F.gold,i%3?.45:.8));}
+  const ph=moonPhase(t), k=Math.cos(ph*TAU), r=22, wax=ph<0.5;
+  g.save();g.beginPath();g.arc(x,y,r,0,TAU);g.clip();
+  circle(g,x,y,r,"#1A2432");
+  g.beginPath(); g.rect(wax?x:x-r, y-r, r, r*2); g.fillStyle="#E8E3D4"; g.fill();
+  g.beginPath(); g.ellipse(x,y,Math.max(.01,r*Math.abs(k)),r,0,0,TAU);
+  g.fillStyle = k>0 ? "#1A2432" : "#E8E3D4"; g.fill();
+  circle(g,x-7,y-6,3.4,"rgba(120,124,130,.30)"); circle(g,x+5,y+7,2.4,"rgba(120,124,130,.26)");
+  g.restore();
+  ring(g,x,y,r,"rgba(0,0,0,.55)",1.4);
+  ring(g,x,y,62,mix("#786D5E",F.gold,.5),1.3);
+  txt(g,"ÂGE "+Math.round(ph*29.53)+"j",x,y+44,7,"#9DA7AC",false,"center",.12);
+  txt(g,"PHASE DE LUNE",x,y+30,7,"#9DA7AC",false,"center",.12);
+}
+
+/* Guichet: recessed window under the hands. */
+function guichet(g,F,x,y,n){
+  const w=76,h=24;
+  rrect(g,-w/2+x,y-h/2,w,h,3,"#060A10");
+  g.save();g.beginPath();g.roundRect(-w/2+x,y-h/2,w,h,3);g.clip();
+  const sh=g.createLinearGradient(0,y-h/2,0,y+h/2);
+  sh.addColorStop(0,"rgba(0,0,0,.85)");sh.addColorStop(.45,"rgba(0,0,0,0)");
+  g.fillStyle=sh;g.fillRect(-w/2+x,y-h/2,w,h);g.restore();
+  g.beginPath();g.roundRect(-w/2+x,y-h/2,w,h,3);
+  g.strokeStyle=rgba(F.gold,.75);g.lineWidth=1.1;g.stroke();
+  txt(g,String(n),x-13,y+5.5,15,F.light,true,"center");
+  txt(g,"ALERTES",x+17,y+3.5,6.5,F.gold,false,"center",.18);
+}
+
+/* Réveil marker on the chapter ring. */
+function alarmPip(g,F,angle){
+  g.save();g.rotate(angle*RAD);
+  poly(g,[0,-232,-4.6,-242,4.6,-242],GARNET,"rgba(0,0,0,.5)",.6);
+  g.restore();
+}
+
+/* ---------------- hands ---------------- */
+function hand(g,F,angle,len,w){
+  g.save();g.rotate(angle*RAD);
+  const p=[-w,16,-w*.92,-len+30,0,-len,w*.92,-len+30,w,16];
+  g.save();g.shadowColor="rgba(0,0,0,.62)";g.shadowBlur=5;g.shadowOffsetX=3;g.shadowOffsetY=4;
+  poly(g,p,F.gold,null,0);g.restore();
+  poly(g,[0,13,0,-len+4,-w*.86,-len+30,-w*.9,15],F.light,null,0);
+  poly(g,[0,13,0,-len+4,w*.86,-len+30,w*.9,15],mix(F.gold,"#000000",.30),null,0);
+  poly(g,p,null,"rgba(0,0,0,.55)",.8);
+  line(g,0,10,0,-len+6,"rgba(255,255,255,.30)",.6);
+  g.restore();
+}
+function secondsHand(g,F,s){
+  g.save();g.rotate(s*6*RAD);
+  poly(g,[-1.7,38,-.45,-208,0,-223,.45,-208,1.7,38],F.gold,"rgba(0,0,0,.45)",.45);
+  ring(g,0,29,7,F.gold,2.2); circle(g,0,29,4.4,rgba(F.gold,.28));
+  g.restore();
+}
+function crystal(g){
+  g.save();g.beginPath();g.arc(0,0,270,0,TAU);g.clip();
+  const gl=g.createLinearGradient(-250,-270,130,250);
+  gl.addColorStop(0,"rgba(255,255,255,0)");gl.addColorStop(.30,"rgba(255,255,255,.022)");
+  gl.addColorStop(.40,"rgba(226,240,255,.075)");gl.addColorStop(.47,"rgba(255,255,255,.018)");
+  gl.addColorStop(.62,"rgba(255,255,255,0)");
+  g.fillStyle=gl;g.fillRect(-270,-270,540,540);
+  g.beginPath();g.arc(0,0,262,Math.PI*1.06,Math.PI*1.52);
+  g.strokeStyle="rgba(255,255,255,.14)";g.lineWidth=7;g.stroke();
+  g.restore();
+}
+
+/* ---------------- the card ---------------- */
+const SENDERS=["Messages","Calendar","Mail"];
+function cardRows(d){
+  const rows=[];
+  if(state.on.event) rows.push(["NEXT","09:30","Design review · Studio"]);
+  if(state.on.media) rows.push(["PLAYING","","Köln Concert, Part I · Jarrett"]);
+  if(state.on.alerts && state.alerts>0 && !state.ambient){
+    const v = state.privacy==="count" ? String(state.alerts)+" waiting"
+            : state.privacy==="senders" ? SENDERS.slice(0,3).join(" · ")
+            : "Ana: are we still on for 6?";
+    rows.push(["ALERTES",String(state.alerts),v]);
+  }
+  if(state.on.alarm) rows.push(["RÉVEIL","06:45",""]);
+  return rows.slice(0,4);
+}
+function drawCard(g,F,d,rows){
+  const date=d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}).toUpperCase();
+  txt(g,date,0,330,13,F.gold,false,"center",.22);
+  if(rows.length){
+    line(g,-150,350,-14,350,rgba(F.gold,.28),.8);
+    line(g, 14,350, 150,350,rgba(F.gold,.28),.8);
+    poly(g,[0,345,5,350,0,355,-5,350],rgba(F.gold,.55),null,0);
+  }
+  let y=380;
+  for(const [label,val,text] of rows){
+    txt(g,label,-12,y,8.5,rgba(F.gold,.85),false,"right",.20);
+    const v = val && text ? val+"   "+text : (val||text);
+    txt(g,v,12,y,12.5,"#C6CED6",true,"left");
+    y+=27;
+  }
+  txt(g,Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g," ").toUpperCase(),
+      0,y+8,9,"#6C7883",false,"center",.16);
+}
+
+/* ---------------- frame ---------------- */
+const cv=document.getElementById("cv"), g=cv.getContext("2d");
+const sc=document.createElement("canvas"), scg=sc.getContext("2d");
+const lc=document.createElement("canvas"), lcg=lc.getContext("2d");
+let key="";
+const invalidate=()=>{key="";};
+
+function render(){
+  const r=cv.getBoundingClientRect();
+  const W=Math.max(1,Math.round(r.width*RES)), H=Math.max(1,Math.round(r.height*RES));
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;lc.width=W;lc.height=H;key="";}
+  const w=r.width,h=r.height; if(!w||!h) return;
+
+  const F=FINISHES[state.finish], dim=state.ambient;
+  const d=new Date(), rows=cardRows(d);
+  const size=Math.min(w*.92, h*(rows.length>=3?.56:rows.length?.62:.74)), k=size/600;
+
+  g.setTransform(RES,0,0,RES,0,0); g.globalAlpha=1;
+  g.fillStyle="#000000"; g.fillRect(0,0,w,h);
+
+  const ms=Date.now();
+  const dx=Math.sin(ms/180000)*w*.018, dy=Math.cos(ms/210000)*h*.014;
+  const t = dim ? lcg : g;
+  if(dim){t.setTransform(1,0,0,1,0,0);t.clearRect(0,0,lc.width,lc.height);t.setTransform(RES,0,0,RES,0,0);}
+
+  t.save(); t.translate(w/2+dx,h/2+dy); t.scale(k,k);
+  t.textBaseline="alphabetic"; t.lineCap="butt"; t.lineJoin="miter";
+
+  const sig=[state.finish,k.toFixed(4),RES].join("|");
+  if(key!==sig){
+    const px=Math.max(1,Math.ceil(600*k*RES));
+    sc.width=px;sc.height=px;
+    scg.setTransform(k*RES,0,0,k*RES,px/2,px/2);
+    scg.clearRect(-300,-300,600,600);
+    scg.textBaseline="alphabetic";scg.lineCap="butt";scg.lineJoin="miter";
+    drawStatic(scg,F); key=sig;
+  }
+  t.drawImage(sc,-300,-300,600,600);
+
+  // counters
+  if(state.on.weather) weatherCounter(t,F,-112,8,state.temp);
+  else pointerCounter(t,F,-112,8,"DAY",DAYS,((d.getDay()+6)%7)/7*360);
+  pointerCounter(t,F,112,8,"DATE",DATES,(d.getDate()-1)/31*360);
+  if(state.bottom==="power" && state.on.battery) powerCounter(t,F,0,119,state.batt,state.charging);
+  else if(state.bottom==="moon" && state.on.moon) moonCounter(t,F,0,119,ms);
+  else pointerCounter(t,F,0,119,"24 H",HOURS,(d.getHours()+d.getMinutes()/60)*15);
+
+  if(state.on.alerts && state.alerts>0 && !dim) guichet(t,F,0,-84,state.alerts);
+  if(state.on.alarm) alarmPip(t,F,(6*30+45*.5));          // 06:45
+
+  const sec=d.getSeconds()+(dim?0:d.getMilliseconds()/1000);
+  hand(t,F,(d.getHours()%12+d.getMinutes()/60)*30,135,8);
+  hand(t,F,(d.getMinutes()+sec/60)*6,195,5);
+  if(!dim) secondsHand(t,F,sec);
+  circle(t,0,0,11,"#070C12"); circle(t,0,0,7,F.gold); circle(t,-1,-1,3,F.light);
+  crystal(t);
+  drawCard(t,F,d,rows);
+  t.restore();
+
+  if(dim){g.globalAlpha=125/255;g.setTransform(1,0,0,1,0,0);g.drawImage(lc,0,0);g.globalAlpha=1;}
+}
+
+/* ---------------- wiring ---------------- */
+const list=document.getElementById("compList");
+list.innerHTML=COMPS.map(c=>
+  '<li class="'+(c.fixed?"fixed":"")+'">'+
+  '<input type="checkbox" id="c-'+c.key+'"'+(state.on[c.key]?" checked":"")+(c.fixed?" disabled":"")+'>'+
+  '<label class="c-name" for="c-'+c.key+'">'+c.name+'<i>'+c.horo+'</i></label>'+
+  '<span class="perm '+c.lvl+'">'+c.perm+'</span>'+
+  '<p class="c-note">'+c.slot+'. '+c.note+'</p></li>').join("");
+COMPS.forEach(c=>{
+  const el=document.getElementById("c-"+c.key); if(c.fixed) return;
+  el.addEventListener("change",e=>{ state.on[c.key]=e.target.checked; });
+});
+
+function seg(id,apply){
+  const box=document.getElementById(id);
+  box.addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    Array.from(box.children).forEach(c=>c.setAttribute("aria-pressed",String(c===b)));
+    apply(b.dataset.v!==undefined?b.dataset.v:+b.dataset.i);
+  });
+}
+seg("finish",v=>{state.finish=v;invalidate();});
+seg("bottom",v=>{state.bottom=v;});
+seg("units", v=>{state.units=v;tempV.textContent=fmtTemp(state.temp)+(v==="C"?"C":"F");});
+seg("cond",  v=>{state.cond=v;});
+seg("privacy",v=>{state.privacy=v;});
+
+const tempV=document.getElementById("tempV"), battV=document.getElementById("battV"), alertsV=document.getElementById("alertsV");
+document.getElementById("temp").addEventListener("input",e=>{
+  state.temp=+e.target.value; tempV.textContent=fmtTemp(state.temp)+(state.units==="C"?"C":"F"); });
+document.getElementById("batt").addEventListener("input",e=>{ state.batt=+e.target.value; battV.textContent=state.batt+"%"; });
+document.getElementById("alerts").addEventListener("input",e=>{ state.alerts=+e.target.value; alertsV.textContent=state.alerts; });
+document.getElementById("charging").addEventListener("change",e=>{ state.charging=e.target.checked; });
+document.getElementById("ambient").addEventListener("change",e=>{ state.ambient=e.target.checked; });
+tempV.textContent=fmtTemp(state.temp)+"C";
+
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let last=0;
+function frame(now){ if(!reduced||now-last>1000){last=now;render();} requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(invalidate);
+</script>

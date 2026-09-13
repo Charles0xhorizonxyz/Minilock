@@ -1,0 +1,901 @@
+<title>Miniscreen in the Round</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Noto+Serif&family=Roboto:wght@400;500&display=swap">
+<style>
+:root{
+  --ink:#07090C; --raised:#131921; --line:#1C232B; --text:#DFE3E8; --muted:#7C8894;
+  --dim:#5A6572; --accent:#C9AA7C; --free:#8FAE8B; --warn:#C98A8A;
+  --serif:"Cormorant Garamond",Georgia,serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--ink);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;
+  padding-inline:20px;padding-block:0 56px;max-width:1180px;margin:0 auto}
+
+header{padding-block:38px 24px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--serif);font-weight:300;font-size:clamp(34px,6vw,54px);line-height:1.02;margin:0;text-wrap:balance}
+.lede{color:var(--muted);margin:12px 0 0;max-width:64ch;font-size:14.5px}
+.lede em{color:var(--text);font-style:normal}
+
+.work{display:grid;grid-template-columns:minmax(0,500px) minmax(0,1fr);gap:34px;padding-block:26px;align-items:start}
+@media (max-width:880px){ .work{grid-template-columns:1fr} }
+
+.screen{position:relative;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden;aspect-ratio:3/4}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl.grabbing{cursor:grabbing}
+#fallback{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:30px;
+  color:var(--muted);font-size:13px}
+
+/* the movement plate: real controls, laid over the caseback once it faces you */
+.plate{position:absolute;left:50%;top:50%;width:420px;transform-origin:50% 50%;
+  display:flex;flex-direction:column;align-items:center;gap:15px;text-align:center;
+  opacity:0;pointer-events:none;will-change:transform,opacity}
+.plate .edition{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8E8570}
+.plate .grp{display:flex;flex-direction:column;align-items:center;gap:8px;width:78%}
+.plate .cap{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#6F6B60}
+.swatches{display:flex;gap:15px}
+.swatches button{appearance:none;border:0;padding:0;cursor:pointer;border-radius:50%;width:42px;height:42px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),inset 0 1px 3px rgba(255,255,255,.3),0 2px 5px rgba(0,0,0,.55)}
+.swatches button[aria-pressed="true"]{box-shadow:0 0 0 1px rgba(0,0,0,.6),inset 0 1px 3px rgba(255,255,255,.3),
+  0 0 0 3px #0C0F12,0 0 0 5px var(--accent)}
+.levers{display:grid;grid-template-columns:1fr 1fr;gap:7px 20px;width:100%}
+.lev{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:#9A9588;
+  user-select:none;white-space:nowrap}
+.lev:hover{color:#CFC9B8}
+.lev input{appearance:none;margin:0;flex:none;cursor:pointer;width:33px;height:18px;border-radius:999px;
+  background:#15181C;box-shadow:inset 0 1px 2px rgba(0,0,0,.9);position:relative;transition:background .16s}
+.lev input::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+  background:#5C5A52;transition:transform .18s,background .18s}
+.lev input:checked{background:#2A2318}
+.lev input:checked::after{transform:translateX(15px);background:var(--accent)}
+.pick{display:flex;border:1px solid #33302A;border-radius:2px;overflow:hidden}
+.pick button{appearance:none;background:transparent;border:0;border-right:1px solid #33302A;cursor:pointer;
+  color:#8F8A7C;font-family:var(--sans);font-size:12.5px;padding:7px 14px}
+.pick button:last-child{border-right:0}
+.pick button[aria-pressed="true"]{background:#23201A;color:#E4DCC8;box-shadow:inset 0 -2px 0 var(--accent)}
+.act{appearance:none;cursor:pointer;background:transparent;color:var(--accent);
+  border:1px solid rgba(201,170,124,.45);border-radius:2px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.18em;text-transform:uppercase;padding:10px 22px}
+.act:hover{background:rgba(201,170,124,.1)}
+
+.cardwrap{position:absolute;left:4%;width:92%;bottom:3.5%;transition:opacity .3s ease}
+.cardwrap canvas{display:block;width:100%;height:100%}
+
+.stage>p{font-family:var(--mono);font-size:10px;color:var(--dim);margin:10px 0 0;display:flex;gap:16px;flex-wrap:wrap;align-items:baseline}
+.stage>p button{appearance:none;background:none;border:0;padding:0 0 2px;color:var(--accent);cursor:pointer;
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+.stage>p button:hover{border-bottom-color:var(--accent)}
+
+.panel{display:flex;flex-direction:column;gap:18px;min-width:0}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:14px 0 0;min-width:0}
+legend{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0}
+.row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.seg{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg button{appearance:none;background:transparent;border:0;border-right:1px solid var(--line);color:var(--muted);
+  font-family:var(--sans);font-size:12.5px;padding:6px 12px;cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--raised);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+.seg button:hover{color:var(--text)}
+.slider{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.slider input[type=range]{appearance:none;width:100px;height:3px;background:var(--line);border-radius:2px;cursor:pointer}
+.slider input[type=range]::-webkit-slider-thumb{appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer}
+.slider input[type=range]::-moz-range-thumb{width:13px;height:13px;border:0;border-radius:50%;background:var(--accent);cursor:pointer}
+.slider b{font-weight:500;color:var(--text);min-width:44px}
+label.sw{display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--muted);font-size:12.5px}
+label.sw input{appearance:none;width:30px;height:17px;border-radius:9px;border:1px solid var(--line);
+  background:#0A0E13;position:relative;cursor:pointer;flex:none;margin:0}
+label.sw input::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;
+  background:var(--dim);transition:transform .16s,background .16s}
+label.sw input:checked{background:#251F16;border-color:#4A3E2C}
+label.sw input:checked::after{transform:translateX(13px);background:var(--accent)}
+.panel p{margin:8px 0 0;color:var(--muted);font-size:12.5px}
+.panel code{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.panel strong{color:var(--text);font-weight:500}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;
+  font-family:var(--mono);font-size:10.5px;font-variant-numeric:tabular-nums}
+.readout div{border-top:1px solid var(--line);padding-top:7px;color:var(--dim)}
+.readout b{display:block;font-weight:500;color:var(--text);font-size:14px;margin-top:2px}
+
+.notes{border-top:1px solid var(--line);padding-block:24px 0}
+.notes h3{font-family:var(--serif);font-weight:500;font-size:25px;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px}
+.grid h4{font-family:var(--sans);font-weight:500;font-size:12.5px;margin:0 0 6px}
+.grid h4 span{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;margin-left:8px;color:var(--free)}
+.grid h4 span.w{color:var(--warn)}
+.grid p{margin:0;color:var(--muted);font-size:12px}
+.grid code{font-family:var(--mono);font-size:11px;color:var(--dim)}
+</style>
+
+<header>
+  <p class="eyebrow">Miniscreen &mdash; Edition 01</p>
+  <h1>Miniscreen in the Round</h1>
+  <p class="lede">The case is now a real solid of revolution, lit by a real environment, and the turn is no longer an animation &mdash; it is angular velocity under a restoring torque. <em>Flick it and it carries; nudge it and it falls back.</em> Press the crown to wind it over.</p>
+</header>
+
+<div class="work">
+  <div class="stage">
+    <div class="screen" id="screen">
+      <canvas id="gl"></canvas>
+      <div id="fallback">This view needs WebGL. The Canvas&nbsp;2D version of the watch works everywhere.</div>
+      <div class="plate" id="plate">
+        <div class="edition">Edition 01</div>
+        <div class="grp">
+          <div class="cap">Gold</div>
+          <div class="swatches" id="finish" role="group" aria-label="Gold alloy">
+            <button type="button" data-i="0" aria-pressed="true" aria-label="24 carat yellow gold"
+              style="background:linear-gradient(145deg,#FFEBBC,#B98B3C)"></button>
+            <button type="button" data-i="1" aria-pressed="false" aria-label="Rose gold"
+              style="background:linear-gradient(145deg,#FFD0B7,#B36F5B)"></button>
+            <button type="button" data-i="2" aria-pressed="false" aria-label="Purple gold"
+              style="background:linear-gradient(145deg,#C8ACDC,#6B4A88)"></button>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="cap">Movement</div>
+          <div class="levers">
+            <label class="lev"><input type="checkbox" id="mAmbient"> Ambient</label>
+            <label class="lev"><input type="checkbox" id="mSweep" checked> Sweep</label>
+            <label class="lev"><input type="checkbox" id="mWeather" checked> Weather</label>
+            <label class="lev"><input type="checkbox" id="mAlerts" checked> Alerts</label>
+            <label class="lev"><input type="checkbox" id="mAlarm" checked> Alarm</label>
+            <label class="lev"><input type="checkbox" id="mEvent" checked> Agenda</label>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="cap">Counter at six</div>
+          <div class="pick" id="bottom" role="group" aria-label="Bottom counter">
+            <button type="button" data-v="power" aria-pressed="true">Reserve</button>
+            <button type="button" data-v="moon" aria-pressed="false">Moon</button>
+            <button type="button" data-v="h24" aria-pressed="false">24 H</button>
+          </div>
+        </div>
+        <button type="button" class="act" id="setDream">Set as screensaver</button>
+      </div>
+      <div class="cardwrap" id="cardwrap"><canvas id="card"></canvas></div>
+    </div>
+    <p><button type="button" id="flipBtn">Wind it over</button><span>Drag the case &mdash; it keeps the speed you let go at</span></p>
+    <div class="readout">
+      <div>Angle<b id="rAngle">0&deg;</b></div>
+      <div>Angular velocity<b id="rOmega">0.0</b></div>
+      <div>Frame<b id="rMs">0.0 ms</b></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <fieldset><legend>Sample state</legend>
+      <div class="row">
+        <div class="slider"><label for="temp">Temp</label><input type="range" id="temp" min="-10" max="40" value="18"><b id="tempV">18&deg;</b></div>
+        <div class="seg" id="cond" role="group" aria-label="Condition">
+          <button type="button" data-v="clear" aria-pressed="true">Clear</button>
+          <button type="button" data-v="cloud" aria-pressed="false">Cloud</button>
+          <button type="button" data-v="rain" aria-pressed="false">Rain</button>
+          <button type="button" data-v="snow" aria-pressed="false">Snow</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="slider"><label for="batt">Battery</label><input type="range" id="batt" min="0" max="100" value="64"><b id="battV">64%</b></div>
+        <label class="sw"><input type="checkbox" id="charging"> Charging</label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="slider"><label for="alerts">Alerts</label><input type="range" id="alerts" min="0" max="12" value="3"><b id="alertsV">3</b></div>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Feel &mdash; tune the weight</legend>
+      <div class="row">
+        <div class="slider"><label for="detent">Detent</label><input type="range" id="detent" min="6" max="60" value="26"><b id="detentV">26</b></div>
+        <div class="slider"><label for="drag">Friction</label><input type="range" id="drag" min="10" max="90" value="36"><b id="dragV">3.6</b></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="slider"><label for="swing">Bow swing</label><input type="range" id="swing" min="0" max="30" value="13"><b id="swingV">13</b></div>
+      </div>
+      <p>Detent is how strongly the two faces pull. Friction bleeds the spin off. At low detent and low friction a hard flick will spin it several times before it settles.</p>
+    </fieldset>
+  </div>
+</div>
+
+<section class="notes">
+  <h3>What this is, and what it costs</h3>
+  <div class="grid">
+    <div>
+      <h4>The case is three finishes<span>real geometry</span></h4>
+      <p>Three lathes sharing endpoints, not one: a mirror-polished bezel, a satin band carrying a circumferential brush map, and a polished caseback rim, with a groove cut at the joint for the case seam. Metal reads as metal because of the transitions between finishes, which a single uniform surface can never show.</p>
+    </div>
+    <div>
+      <h4>It is photographed, not floated<span>no assets</span></h4>
+      <p>A studio drawn into a canvas &mdash; overhead strip, key, warm second key, floor bounce &mdash; through <code>PMREMGenerator</code>, plus a seamless backdrop and a real cast shadow. The shadow narrows as the watch turns edge-on, which is the cue that says the thing occupies space. No HDR file, about sixty lines.</p>
+    </div>
+    <div>
+      <h4>The turn is physics<span>no tween</span></h4>
+      <p>Potential <code>U = −A·cos 2θ</code> puts stable minima at both faces. Torque is <code>−K·sin 2θ</code>, friction is linear in ω. Pressing the crown applies an impulse, not a duration &mdash; the watch decides how long it takes.</p>
+    </div>
+    <div>
+      <h4>It swings on its bow<span>second spring</span></h4>
+      <p>Angular acceleration feeds a damped spring on the bow pivot, so a hard flick makes the watch rock a few degrees and settle. That secondary motion is most of what reads as mass.</p>
+    </div>
+    <div>
+      <h4>The dial is still Canvas<span>ports</span></h4>
+      <p>Both faces are <code>CanvasTexture</code>s drawn by the same 2D code as the Android build &mdash; hands, counters, guichet, engraving. The dial artwork is portable even though this shell is not.</p>
+    </div>
+    <div>
+      <h4>This shell will not port<span class="w">be aware</span></h4>
+      <p>WebGL has no equivalent in a Canvas <code>DreamService</code>. Shipping this look means OpenGL ES shaders by hand, or Filament at roughly 4&nbsp;MB &mdash; which ends the no-libraries rule the project has kept so far.</p>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+<script>
+"use strict";
+const TAU=Math.PI*2, RAD=Math.PI/180;
+const SERIF='"Noto Serif", Georgia, serif', SANS='"Roboto", system-ui, sans-serif';
+/* Three golds. `metal` is each alloy's F0 reflectance in sRGB: three.js converts it to linear
+   and a metal multiplies the environment by it, so these render far richer than they look as
+   flat swatches. Purple gold is AuAl2, a real gold-aluminium intermetallic, and genuinely
+   darker than yellow gold -- it reflects less. Each dial is chosen against its metal. */
+const FINISHES=[
+  {name:"24k",    gold:"#E2C089", light:"#FFF2D0", dial:"#142B40", metal:0xFFE2A0},
+  {name:"Rose",   gold:"#DDA994", light:"#FFE1CE", dial:"#2E2021", metal:0xF2B79C},
+  {name:"Purple", gold:"#B296C8", light:"#EDE0F6", dial:"#23202E", metal:0xB08FC4}
+];
+const DAYS=["M","T","W","T","F","S","S"], DATES=["1","5","10","15","20","25"], HOURS=["0","4","8","12","16","20"];
+const GARNET="#9E4A46";
+const state={finish:0,ambient:false,sweep:true,bottom:"power",weather:true,alerts:true,alarm:true,event:true,
+  temp:18,cond:"clear",batt:64,charging:false,alertN:3,
+  K:26, C:3.6, swing:13};
+
+/* ---------- 2D helpers (shared with the Android drawing) ---------- */
+const hx=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+function rgba(h,a){const c=hx(h);return "rgba("+c[0]+","+c[1]+","+c[2]+","+a+")";}
+function mix(a,b,t){const x=hx(a),y=hx(b);
+  return "rgb("+Math.round(x[0]+(y[0]-x[0])*t)+","+Math.round(x[1]+(y[1]-x[1])*t)+","+Math.round(x[2]+(y[2]-x[2])*t)+")";}
+function circle(g,x,y,r,f){g.beginPath();g.arc(x,y,r,0,TAU);g.fillStyle=f;g.fill();}
+function ring(g,x,y,r,s,w){g.beginPath();g.arc(x,y,r,0,TAU);g.strokeStyle=s;g.lineWidth=w;g.stroke();}
+function arcS(g,x,y,r,a0,a1,s,w,cap){g.beginPath();g.arc(x,y,r,a0,a1);g.strokeStyle=s;g.lineWidth=w;
+  g.lineCap=cap||"butt";g.stroke();g.lineCap="butt";}
+function line(g,x1,y1,x2,y2,s,w){g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.strokeStyle=s;g.lineWidth=w;g.stroke();}
+function poly(g,p,f,s,w){g.beginPath();g.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)g.lineTo(p[i],p[i+1]);g.closePath();
+  if(f){g.fillStyle=f;g.fill();} if(s){g.strokeStyle=s;g.lineWidth=w;g.stroke();}}
+function rrect(g,x,y,w,h,r,f){g.beginPath();g.roundRect(x,y,w,h,r);g.fillStyle=f;g.fill();}
+function txt(g,s,x,y,size,color,serif,align,ls){
+  g.fillStyle=color;g.font=size+"px "+(serif?SERIF:SANS);g.textAlign=align||"center";
+  if("letterSpacing" in g) g.letterSpacing=(ls||0)+"em";
+  g.fillText(s,x,y);
+  if("letterSpacing" in g) g.letterSpacing="0em";
+  g.textAlign="center";
+}
+function arcText(g,str,r,midDeg,step,size,color,serif,bottom){
+  const chars=Array.from(str), span=(chars.length-1)*step;
+  g.font=size+"px "+(serif?SERIF:SANS);g.textAlign="center";g.textBaseline="middle";g.fillStyle=color;
+  chars.forEach((ch,i)=>{
+    const off=(i*step-span/2)*(bottom?-1:1);
+    g.save();g.rotate(off*RAD);
+    if(bottom){g.translate(0,r);g.rotate(Math.PI);} else g.translate(0,-r);
+    g.fillText(ch,0,0);g.restore();
+  });
+  g.textBaseline="alphabetic";
+}
+
+/* ---------- dial artwork (everything inside r = 270; the bezel is geometry now) ---------- */
+function dialStatic(g,F){
+  const dg=g.createRadialGradient(-80,-100,0,-80,-100,480);
+  dg.addColorStop(0,F.dial);dg.addColorStop(1,"#080E17");
+  circle(g,0,0,270,dg);
+  g.save();g.beginPath();g.arc(0,0,246,0,TAU);g.clip();
+  if(g.createConicGradient){const sh=g.createConicGradient(0,0,0);
+    for(let i=0;i<=8;i++) sh.addColorStop(i/8,i%2===0?"rgba(214,232,255,.085)":"rgba(0,0,0,.16)");
+    g.fillStyle=sh;g.fillRect(-250,-250,500,500);}
+  for(let i=0;i<240;i++){g.save();g.rotate(i*TAU/240);
+    line(g,0,-36,0,-250,i%2?"rgba(216,234,255,.045)":"rgba(0,0,0,.10)",.9);g.restore();}
+  const vig=g.createRadialGradient(0,0,132,0,0,252);
+  vig.addColorStop(0,"rgba(0,0,0,0)");vig.addColorStop(.72,"rgba(0,0,0,.18)");vig.addColorStop(1,"rgba(0,0,0,.52)");
+  circle(g,0,0,248,vig);g.restore();
+  const inn=g.createRadialGradient(0,0,228,0,0,272);
+  inn.addColorStop(0,"rgba(0,0,0,0)");inn.addColorStop(.62,"rgba(0,0,0,.26)");inn.addColorStop(1,"rgba(0,0,0,.72)");
+  circle(g,0,0,270,inn);
+  ring(g,0,0,246,"#53606A",.7); ring(g,0,0,239,"#333E49",.6);
+  for(let i=0;i<60;i++){g.save();g.rotate(i*6*RAD);
+    if(i%5===0) poly(g,[-1.5,-253,1.5,-253,2.4,-265,-2.4,-265],F.gold,null,0);
+    else line(g,0,-255,0,-261,"#8B99A4",.9);g.restore();}
+  for(let i=1;i<=12;i++){g.save();g.rotate(i*30*RAD);
+    if(i===12){baton(g,F,-6.6,4.4);baton(g,F,6.6,4.4);} else baton(g,F,0,10);g.restore();}
+  txt(g,"MINISCREEN",0,-138,17,F.light,true,"center",.30);
+  txt(g,"EDITION 01",0,-118,7.5,F.gold,false,"center",.34);
+}
+function baton(g,F,cx,w){
+  const h1=-229,h2=-201,half=w/2;
+  rrect(g,cx-half+.9,h1+1.4,w,28,1.4,"rgba(0,0,0,.55)");
+  poly(g,[cx,h1+1.2,cx+half,h1+4,cx+half,h2,cx,h2-1.2],mix(F.gold,"#000000",.46),null,0);
+  poly(g,[cx,h1+1.2,cx-half,h1+4,cx-half,h2,cx,h2-1.2],F.light,null,0);
+  poly(g,[cx-half,h1+4,cx,h1-1.4,cx+half,h1+4],mix(F.light,F.gold,.55),null,0);
+  line(g,cx,h1,cx,h2-1,"rgba(255,255,255,.42)",.7);
+  poly(g,[cx-half,h1+4,cx,h1-1.4,cx+half,h1+4,cx+half,h2,cx-half,h2],null,"rgba(0,0,0,.55)",.7);
+}
+function well(g,F,x,y,r){
+  circle(g,x,y,r,"#0B1520");
+  g.save();g.beginPath();g.arc(x,y,r-5,0,TAU);g.clip();
+  for(let i=8;i<=r-6;i+=3.2) ring(g,x,y,i,"rgba(206,226,246,.05)",.55);
+  const rec=g.createRadialGradient(x,y,r*.55,x,y,r);
+  rec.addColorStop(0,"rgba(0,0,0,0)");rec.addColorStop(1,"rgba(0,0,0,.58)");
+  circle(g,x,y,r,rec);g.restore();
+  ring(g,x,y,r,mix("#786D5E",F.gold,.5),1.3);ring(g,x,y,r-2,"rgba(0,0,0,.5)",1);
+}
+function cHand(g,F,x,y,a,len){g.save();g.translate(x,y);g.rotate(a*RAD);
+  poly(g,[-1.3,7,-.5,-len,.5,-len,1.3,7],F.light,"rgba(0,0,0,.5)",.5);circle(g,0,0,3,F.gold);g.restore();}
+function pointerCounter(g,F,x,y,title,labels,angle){
+  well(g,F,x,y,62);ring(g,x,y,57,"#293642",1);
+  for(let i=0;i<30;i++){const a=i*Math.PI/15,s=Math.sin(a),c=Math.cos(a);
+    line(g,x+s*52,y-c*52,x+s*55,y-c*55,"#71808C",.7);}
+  for(let i=0;i<labels.length;i++){
+    const a=title==="DATE"?(parseInt(labels[i],10)-1)*TAU/31:i*TAU/labels.length;
+    txt(g,labels[i],x+Math.sin(a)*42,y-Math.cos(a)*42+3,8,F.gold,false);}
+  txt(g,title,x,y+23,7,"#9DA7AC",false,"center",.12);
+  cHand(g,F,x,y,angle,33);
+}
+function weatherCounter(g,F,x,y,tempC){
+  well(g,F,x,y,62);
+  const A0=-126*RAD,A1=126*RAD,lo=-10,hi=40,t=Math.max(lo,Math.min(hi,tempC));
+  const at=v=>A0+(A1-A0)*(v-lo)/(hi-lo),XY=(a,r)=>[x+Math.sin(a)*r,y-Math.cos(a)*r];
+  arcS(g,x,y,52,at(lo)-Math.PI/2,at(hi)-Math.PI/2,"#4C5A66",.8);
+  for(let v=lo;v<=hi;v+=5){const a=at(v),M=v%10===0,p0=XY(a,M?45:48.5),p1=XY(a,52.5);
+    line(g,p0[0],p0[1],p1[0],p1[1],M?F.gold:"#71808C",M?1.2:.7);
+    if(v%20===0){const pl=XY(a,37);txt(g,String(v),pl[0],pl[1]+3,7.5,"#9DA7AC",false);}}
+  const f1=XY(at(0),52.5),f0=XY(at(0),44);line(g,f0[0],f0[1],f1[0],f1[1],GARNET,1.6);
+  glyph(g,F,x,y-9,state.cond);
+  txt(g,Math.round(tempC)+"°",x,y+30,13,F.light,true);
+  cHand(g,F,x,y,at(t)/RAD,44);
+}
+function glyph(g,F,x,y,cond){
+  const L=F.light,D="#93A3B0";
+  if(cond==="clear"){circle(g,x,y,7.5,L);
+    for(let i=0;i<8;i++){const a=i*TAU/8;
+      line(g,x+Math.sin(a)*10.5,y-Math.cos(a)*10.5,x+Math.sin(a)*14,y-Math.cos(a)*14,L,1.3);}return;}
+  const cloud=(cx,cy,s,col)=>{g.beginPath();
+    g.arc(cx-5*s,cy+1*s,4.6*s,0,TAU);g.arc(cx+.5*s,cy-3*s,6.4*s,0,TAU);
+    g.arc(cx+6.5*s,cy+1*s,5*s,0,TAU);g.rect(cx-9.6*s,cy+1*s,16.2*s,4.6*s);
+    g.fillStyle=col;g.fill();};
+  if(cond==="cloud"){circle(g,x+6,y-6,6,rgba(F.gold,.5));cloud(x-1,y,1,L);return;}
+  cloud(x,y-4,.92,D);
+  if(cond==="rain"){for(let i=-1;i<=1;i++) line(g,x+i*6.5,y+5,x+i*6.5-2.4,y+13,"#8FB6CF",1.5);}
+  if(cond==="snow"){for(let i=-1;i<=1;i++){const px=x+i*6.5,py=y+9;
+    for(let k=0;k<3;k++){const a=k*Math.PI/3;
+      line(g,px-Math.sin(a)*3,py-Math.cos(a)*3,px+Math.sin(a)*3,py+Math.cos(a)*3,L,1);}}}
+}
+function powerCounter(g,F,x,y,pct,charging){
+  well(g,F,x,y,62);
+  const A0=-118*RAD,A1=118*RAD,at=v=>A0+(A1-A0)*v/100,XY=(a,r)=>[x+Math.sin(a)*r,y-Math.cos(a)*r];
+  arcS(g,x,y,52,A0-Math.PI/2,A1-Math.PI/2,"#4C5A66",.8);
+  arcS(g,x,y,52,A0-Math.PI/2,at(Math.min(pct,18))-Math.PI/2,pct<=18?GARNET:"#5B4A46",2.6,"round");
+  if(charging) arcS(g,x,y,52,at(pct)-Math.PI/2,A1-Math.PI/2,rgba(F.gold,.42),2.6,"round");
+  for(let v=0;v<=100;v+=12.5){const a=at(v),M=v%25===0,p0=XY(a,M?45:48.5),p1=XY(a,52.5);
+    line(g,p0[0],p0[1],p1[0],p1[1],M?F.gold:"#71808C",M?1.2:.7);}
+  txt(g,"0",XY(at(0),36)[0],XY(at(0),36)[1]+3,7.5,"#9DA7AC",false);
+  txt(g,"100",XY(at(100),36)[0],XY(at(100),36)[1]+3,7.5,"#9DA7AC",false);
+  txt(g,"RÉSERVE",x,y+30,7,"#9DA7AC",false,"center",.12);
+  txt(g,pct+"%",x,y-6,13,pct<=18?GARNET:F.light,true);
+  if(charging){const p=XY(at(100),52.5);
+    poly(g,[p[0],p[1]-6,p[0]-3.4,p[1]+1,p[0]-.6,p[1]+1,p[0]-1.6,p[1]+7,p[0]+3.4,p[1]-1,p[0]+.6,p[1]-1],F.gold,null,0);}
+  cHand(g,F,x,y,at(pct)/RAD,44);
+}
+const SYN=29.530588853*86400000,NEW0=Date.UTC(2000,0,6,18,14);
+function moonCounter(g,F,x,y,t){
+  circle(g,x,y,62,"#060B14");
+  const sky=g.createRadialGradient(x,y-14,6,x,y,62);
+  sky.addColorStop(0,"#16283D");sky.addColorStop(1,"#050A12");circle(g,x,y,60,sky);
+  for(let i=0;i<11;i++){const a=i*2.399,r=16+((i*37)%42);
+    circle(g,x+Math.cos(a)*r,y+Math.sin(a)*r*.8,i%3?.9:1.4,rgba(F.gold,i%3?.45:.8));}
+  let ph=((t-NEW0)%SYN)/SYN;if(ph<0)ph+=1;
+  const k=Math.cos(ph*TAU),r=22,wax=ph<0.5;
+  g.save();g.beginPath();g.arc(x,y,r,0,TAU);g.clip();
+  circle(g,x,y,r,"#1A2432");
+  g.beginPath();g.rect(wax?x:x-r,y-r,r,r*2);g.fillStyle="#E8E3D4";g.fill();
+  g.beginPath();g.ellipse(x,y,Math.max(.01,r*Math.abs(k)),r,0,0,TAU);
+  g.fillStyle=k>0?"#1A2432":"#E8E3D4";g.fill();
+  circle(g,x-7,y-6,3.4,"rgba(120,124,130,.30)");circle(g,x+5,y+7,2.4,"rgba(120,124,130,.26)");
+  g.restore();
+  ring(g,x,y,r,"rgba(0,0,0,.55)",1.4);ring(g,x,y,62,mix("#786D5E",F.gold,.5),1.3);
+  txt(g,"PHASE DE LUNE",x,y+30,7,"#9DA7AC",false,"center",.12);
+  txt(g,"ÂGE "+Math.round(ph*29.53)+" J",x,y+44,7,"#6F7B84",false,"center",.12);
+}
+function guichet(g,F,x,y,n){
+  const w=76,h=24;
+  rrect(g,x-w/2,y-h/2,w,h,3,"#060A10");
+  g.save();g.beginPath();g.roundRect(x-w/2,y-h/2,w,h,3);g.clip();
+  const sh=g.createLinearGradient(0,y-h/2,0,y+h/2);
+  sh.addColorStop(0,"rgba(0,0,0,.85)");sh.addColorStop(.45,"rgba(0,0,0,0)");
+  g.fillStyle=sh;g.fillRect(x-w/2,y-h/2,w,h);g.restore();
+  g.beginPath();g.roundRect(x-w/2,y-h/2,w,h,3);g.strokeStyle=rgba(F.gold,.75);g.lineWidth=1.1;g.stroke();
+  txt(g,String(n),x-13,y+5.5,15,F.light,true);
+  txt(g,"ALERTES",x+17,y+3.5,6.5,F.gold,false,"center",.18);
+}
+function hand(g,F,angle,len,w){
+  g.save();g.rotate(angle*RAD);
+  const p=[-w,16,-w*.92,-len+30,0,-len,w*.92,-len+30,w,16];
+  g.save();g.shadowColor="rgba(0,0,0,.62)";g.shadowBlur=5;g.shadowOffsetX=3;g.shadowOffsetY=4;
+  poly(g,p,F.gold,null,0);g.restore();
+  poly(g,[0,13,0,-len+4,-w*.86,-len+30,-w*.9,15],F.light,null,0);
+  poly(g,[0,13,0,-len+4,w*.86,-len+30,w*.9,15],mix(F.gold,"#000000",.30),null,0);
+  poly(g,p,null,"rgba(0,0,0,.55)",.8);
+  line(g,0,10,0,-len+6,"rgba(255,255,255,.30)",.6);
+  g.restore();
+}
+
+/* ---------- caseback artwork ---------- */
+function backArt(g,F){
+  const band=g.createLinearGradient(-250,-260,230,270);
+  band.addColorStop(0,   mix(F.gold,"#000000",.80));
+  band.addColorStop(.22, mix(F.gold,"#FFFFFF",.38));
+  band.addColorStop(.45, mix(F.gold,"#000000",.52));
+  band.addColorStop(.68, mix(F.gold,"#FFFFFF",.16));
+  band.addColorStop(1,   mix(F.gold,"#000000",.74));
+  circle(g,0,0,291,band);
+  g.save();g.beginPath();g.arc(0,0,291,0,TAU);g.arc(0,0,276,0,TAU,true);g.clip();
+  for(let i=0;i<200;i++){g.save();g.rotate(i*1.8*RAD);
+    line(g,0,-276,0,-291,i%2?"rgba(255,255,255,.07)":"rgba(0,0,0,.18)",2.2);g.restore();}
+  g.restore();
+  for(let r=254;r<=274;r+=2.4) ring(g,0,0,r,r%2?"rgba(255,255,255,.035)":"rgba(0,0,0,.09)",1.2);
+  ring(g,0,0,276,"rgba(0,0,0,.5)",1.6);ring(g,0,0,252,"rgba(0,0,0,.55)",2);
+  g.save();g.translate(0,.9);arcText(g,"MINISCREEN",270,0,9.2,15,"rgba(255,255,255,.16)",true,false);g.restore();
+  arcText(g,"MINISCREEN",270,0,9.2,15,mix(F.gold,"#000000",.86),true,false);
+  g.save();g.translate(0,.9);arcText(g,"EDITION 01 · CANVAS MOVEMENT",268,180,5.4,9,"rgba(255,255,255,.14)",false,true);g.restore();
+  arcText(g,"EDITION 01 · CANVAS MOVEMENT",268,180,5.4,9,mix(F.gold,"#000000",.84),false,true);
+  for(const deg of [58,96,264,302]){
+    const a=deg*RAD,x=Math.sin(a)*263,y=-Math.cos(a)*263;
+    const sg=g.createLinearGradient(x-8,y-8,x+8,y+8);
+    sg.addColorStop(0,mix(F.gold,"#FFFFFF",.42));sg.addColorStop(.5,mix(F.gold,"#000000",.40));
+    sg.addColorStop(1,mix(F.gold,"#000000",.76));
+    circle(g,x,y,8.2,"rgba(0,0,0,.5)");circle(g,x,y,7.2,sg);
+    g.save();g.translate(x,y);g.rotate(a+.6);
+    line(g,-5,0,5,0,"rgba(0,0,0,.72)",2);line(g,-5,1.1,5,1.1,"rgba(255,255,255,.18)",.8);g.restore();
+  }
+  const plate=g.createRadialGradient(-70,-90,10,0,0,250);
+  plate.addColorStop(0,"#3B3327");plate.addColorStop(.55,"#2A231A");plate.addColorStop(1,"#191510");
+  circle(g,0,0,250,plate);
+  g.save();g.beginPath();g.arc(0,0,248,0,TAU);g.clip();
+  for(let row=-17;row<=17;row++) for(let col=-17;col<=17;col++){
+    const px=col*15+(row%2?7.5:0),py=row*15;
+    if(px*px+py*py>256*256) continue;
+    arcS(g,px,py,9.6,0,TAU,"rgba(255,236,200,.055)",1);
+    arcS(g,px,py,9.6,Math.PI*1.05,Math.PI*1.75,"rgba(255,242,214,.115)",1.1);
+  }
+  const sheen=g.createLinearGradient(-230,-250,160,240);
+  sheen.addColorStop(0,"rgba(255,255,255,.10)");sheen.addColorStop(.42,"rgba(255,255,255,.012)");
+  sheen.addColorStop(.75,"rgba(0,0,0,.24)");sheen.addColorStop(1,"rgba(255,255,255,.05)");
+  g.fillStyle=sheen;g.fillRect(-250,-250,500,500);g.restore();
+  ring(g,0,0,250,"rgba(0,0,0,.6)",3);ring(g,0,0,246,rgba(F.gold,.22),1);
+}
+
+/* ---------- the card ---------- */
+const SENDERS=["Messages","Calendar","Mail"];
+function cardRows(){
+  const r=[];
+  if(state.event) r.push(["NEXT","09:30","Design review · Studio"]);
+  if(state.alerts&&state.alertN>0&&!state.ambient) r.push(["ALERTES",String(state.alertN),SENDERS.join(" · ")]);
+  if(state.alarm) r.push(["RÉVEIL","06:45",""]);
+  return r.slice(0,3);
+}
+function drawCard(g,F,d,rows){
+  txt(g,d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}).toUpperCase(),
+      0,18,13,F.gold,false,"center",.22);
+  if(rows.length){
+    line(g,-150,38,-14,38,rgba(F.gold,.28),.8);line(g,14,38,150,38,rgba(F.gold,.28),.8);
+    poly(g,[0,33,5,38,0,43,-5,38],rgba(F.gold,.55),null,0);
+  }
+  let y=66;
+  for(const [label,val,text] of rows){
+    txt(g,label,-12,y,8.5,rgba(F.gold,.85),false,"right",.20);
+    txt(g,val&&text?val+"   "+text:(val||text),12,y,12.5,"#C6CED6",true,"left");
+    y+=27;
+  }
+  txt(g,Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g," ").toUpperCase(),
+      0,y+6,9,"#6C7883",false,"center",.16);
+}
+
+/* =========================================================
+   three.js scene
+   ========================================================= */
+const glCanvas=document.getElementById("gl");
+const screenEl=document.getElementById("screen");
+const plateEl=document.getElementById("plate");
+const probe=document.createElement("canvas");
+if(!window.THREE || !(probe.getContext("webgl2")||probe.getContext("webgl"))){
+  document.getElementById("fallback").style.display="grid";
+  glCanvas.style.display="none";
+}else{
+const TEX=1024;
+function mkCanvas(n){const c=document.createElement("canvas");c.width=c.height=n;return c;}
+
+/* dial texture: design r=270 fills the square */
+const dialCanvas=mkCanvas(TEX), dctx=dialCanvas.getContext("2d");
+const dialStaticCv=mkCanvas(TEX), dsctx=dialStaticCv.getContext("2d");
+/* caseback texture: design r=291 fills the square */
+const backCanvas=mkCanvas(TEX), bctx=backCanvas.getContext("2d");
+
+function setup2D(ctx,designR){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,TEX,TEX);
+  const k=(TEX/2)/designR;
+  ctx.setTransform(k,0,0,k,TEX/2,TEX/2);
+  ctx.textBaseline="alphabetic";ctx.lineCap="butt";ctx.lineJoin="miter";
+}
+let staticKey="";
+function paintDial(){
+  const F=FINISHES[state.finish], key=state.finish;
+  if(staticKey!==key){ setup2D(dsctx,270); dialStatic(dsctx,F); staticKey=key; }
+  setup2D(dctx,270);
+  dctx.save();dctx.setTransform(1,0,0,1,0,0);dctx.drawImage(dialStaticCv,0,0);dctx.restore();
+  const d=new Date(), dim=state.ambient;
+  if(state.weather) weatherCounter(dctx,F,-112,8,state.temp);
+  else pointerCounter(dctx,F,-112,8,"DAY",DAYS,((d.getDay()+6)%7)/7*360);
+  pointerCounter(dctx,F,112,8,"DATE",DATES,(d.getDate()-1)/31*360);
+  if(state.bottom==="power") powerCounter(dctx,F,0,119,state.batt,state.charging);
+  else if(state.bottom==="moon") moonCounter(dctx,F,0,119,Date.now());
+  else pointerCounter(dctx,F,0,119,"24 H",HOURS,(d.getHours()+d.getMinutes()/60)*15);
+  if(state.alerts&&state.alertN>0&&!dim) guichet(dctx,F,0,-84,state.alertN);
+  if(state.alarm){dctx.save();dctx.rotate((6*30+45*.5)*RAD);
+    poly(dctx,[0,-232,-4.6,-242,4.6,-242],GARNET,"rgba(0,0,0,.5)",.6);dctx.restore();}
+  const sec=d.getSeconds()+(dim||!state.sweep?0:d.getMilliseconds()/1000);
+  hand(dctx,F,(d.getHours()%12+d.getMinutes()/60)*30,135,8);
+  hand(dctx,F,(d.getMinutes()+sec/60)*6,195,5);
+  if(!dim){dctx.save();dctx.rotate(sec*6*RAD);
+    poly(dctx,[-1.7,38,-.45,-208,0,-223,.45,-208,1.7,38],F.gold,"rgba(0,0,0,.45)",.45);
+    ring(dctx,0,29,7,F.gold,2.2);circle(dctx,0,29,4.4,rgba(F.gold,.28));dctx.restore();}
+  circle(dctx,0,0,11,"#070C12");circle(dctx,0,0,7,F.gold);circle(dctx,-1,-1,3,F.light);
+  if(dim){ dctx.setTransform(1,0,0,1,0,0); dctx.fillStyle="rgba(0,0,0,.51)"; dctx.fillRect(0,0,TEX,TEX); }
+  dialTex.needsUpdate=true;
+}
+function paintBack(){ setup2D(bctx,291); backArt(bctx,FINISHES[state.finish]); backTex.needsUpdate=true; }
+
+const dialTex=new THREE.CanvasTexture(dialCanvas);
+const backTex=new THREE.CanvasTexture(backCanvas);
+[dialTex,backTex].forEach(t=>{t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;});
+
+/* ---- procedural studio environment: two softboxes and a warm bounce ---- */
+function envTexture(){
+  const c=document.createElement("canvas");c.width=1024;c.height=512;
+  const g=c.getContext("2d");
+  const sky=g.createLinearGradient(0,0,0,512);
+  sky.addColorStop(0,"#27313D");sky.addColorStop(.40,"#525E6C");sky.addColorStop(.52,"#2A3039");
+  sky.addColorStop(1,"#07090D");
+  g.fillStyle=sky;g.fillRect(0,0,1024,512);
+  const box=(cx,cy,rx,ry,col,a)=>{
+    const rg=g.createRadialGradient(cx,cy,0,cx,cy,Math.max(rx,ry));
+    rg.addColorStop(0,rgba(col,a));rg.addColorStop(.45,rgba(col,a*.55));rg.addColorStop(1,rgba(col,0));
+    g.save();g.translate(cx,cy);g.scale(rx/Math.max(rx,ry),ry/Math.max(rx,ry));g.translate(-cx,-cy);
+    g.fillStyle=rg;g.fillRect(0,0,1024,512);g.restore();
+  };
+  // Softboxes with real edges: polished metal reflects the SHAPE of a light, and a blurred
+  // rectangle gives the long specular streak a blob never will.
+  const panel=(x,y,w,h,col,a,blur)=>{
+    g.save(); g.filter="blur("+blur+"px)"; g.fillStyle=rgba(col,a);
+    g.fillRect(x-w/2,y-h/2,w,h); g.restore();
+  };
+  panel(430, 40,660, 96,"#FFFFFF",.80,24);   // overhead strip: the standard watch-photography
+                                             // light, and what keeps the top of the case alive
+  panel(232,140,300,132,"#FFFFFF",1,16);     // key
+  panel(232,140,210, 78,"#FFFFFF",1, 5);     // its hot core
+  panel(872,176,214,150,"#FFE9CC",.85,20);   // warm second key: keeps the rim lit right round
+  panel(636,214,150,190,"#CFE0F2",.42,26);   // cool fill
+  box(520,432,430,118,"#7A5A33",.55);        // warm floor bounce
+  box(60,300,150,95,"#E9D9BC",.34);
+  const t=new THREE.CanvasTexture(c);
+  t.mapping=THREE.EquirectangularReflectionMapping;
+  t.colorSpace=THREE.SRGBColorSpace;
+  return t;
+}
+
+const renderer=new THREE.WebGLRenderer({canvas:glCanvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.18;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+const scene=new THREE.Scene();
+const pmrem=new THREE.PMREMGenerator(renderer);
+const envRT=pmrem.fromEquirectangular(envTexture());
+scene.environment=envRT.texture;
+
+const camera=new THREE.PerspectiveCamera(26,1,0.1,100);
+camera.position.set(0,-0.15,9.2);
+camera.lookAt(0,-0.15,0);
+
+function backdropTex(){
+  const c=document.createElement("canvas"); c.width=c.height=512;
+  const g=c.getContext("2d");
+  g.fillStyle="#040507"; g.fillRect(0,0,512,512);
+  const rg=g.createRadialGradient(250,196,10,256,250,320);
+  rg.addColorStop(0,"#2B313A"); rg.addColorStop(.38,"#171B21");
+  rg.addColorStop(.72,"#0B0D11"); rg.addColorStop(1,"#040507");
+  g.fillStyle=rg; g.fillRect(0,0,512,512);
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
+}
+const backdrop=new THREE.Mesh(new THREE.PlaneGeometry(18,18),
+  new THREE.MeshStandardMaterial({map:backdropTex(),roughness:1,metalness:0,envMapIntensity:0.25}));
+backdrop.position.z=-6; backdrop.receiveShadow=true; scene.add(backdrop);
+
+scene.add(new THREE.AmbientLight(0xffffff,0.25));
+const key=new THREE.DirectionalLight(0xfff2dd,1.65); key.position.set(-3.2,4.2,5.0); scene.add(key);
+const rim=new THREE.DirectionalLight(0x9fc0e8,1.1); rim.position.set(3.6,-1.2,-3.0); scene.add(rim);
+const warm=new THREE.DirectionalLight(0xffd9a8,1.4); warm.position.set(4.4,2.2,2.6); scene.add(warm);
+const caster=new THREE.DirectionalLight(0xfff0dd,1.05);
+caster.position.set(-1.15,1.75,6.0); caster.castShadow=true;
+caster.shadow.mapSize.set(1024,1024);
+caster.shadow.camera.left=-2.6; caster.shadow.camera.right=2.6;
+caster.shadow.camera.top=2.8;   caster.shadow.camera.bottom=-2.8;
+caster.shadow.camera.near=0.5;  caster.shadow.camera.far=22;
+caster.shadow.radius=4; caster.shadow.bias=-0.0009;
+scene.add(caster);
+
+/* ---- geometry ---- */
+const swingGroup=new THREE.Group(); swingGroup.position.set(0,1.42,0); scene.add(swingGroup);
+const spin=new THREE.Group(); spin.position.set(0,-1.42,0); swingGroup.add(spin);
+
+function metalMat(hexColor,rough){
+  return new THREE.MeshStandardMaterial({color:hexColor,metalness:1.0,roughness:rough,envMapIntensity:2.0});
+}
+/* A watch case reads as metal because of the transitions between finishes, so the case is
+   three lathes rather than one: polished bezel, satin band, polished caseback rim. The
+   profiles share endpoints, so the joins are continuous but the materials are not. */
+const FRONT_Z=0.147, BACK_Z=-0.162, CRYSTAL_Z=0.156;
+
+const P_BEZEL=[[0.000,0.140],[0.845,0.140],[0.862,0.156],[0.884,0.172],
+               [0.920,0.180],[0.952,0.174],[0.976,0.150],[0.988,0.122],[0.992,0.096]];
+const P_BAND =[[0.992,0.096],[0.999,0.054],[1.000,-0.020],[0.996,-0.072],
+               [0.988,-0.098],[0.980,-0.107],[0.987,-0.116]];   // last three cut the case seam
+const P_BACK =[[0.987,-0.116],[0.980,-0.132],[0.968,-0.148],[0.952,-0.161],
+               [0.945,-0.168],[0.000,-0.168]];
+
+function latheOf(pts,mat){
+  // reversed: these profiles are written front-to-back, but LatheGeometry needs increasing y
+  // for outward-facing normals
+  const g=new THREE.LatheGeometry(pts.slice().reverse().map(p=>new THREE.Vector2(p[0],p[1])),160);
+  const m=new THREE.Mesh(g,mat);
+  m.rotation.x=Math.PI/2;                  // lathe spins about Y; the watch axis is Z
+  spin.add(m); return m;
+}
+
+/* circumferential brushing: streaks around the band, so it catches light unevenly */
+function brushMap(){
+  const c=document.createElement("canvas"); c.width=2048; c.height=8;
+  const g=c.getContext("2d");
+  g.fillStyle="#8a8a8a"; g.fillRect(0,0,2048,8);
+  for(let i=0;i<2600;i++){
+    const v=Math.round(96+Math.random()*104);
+    g.fillStyle="rgb("+v+","+v+","+v+")";
+    g.fillRect(Math.random()*2048,0,0.5+Math.random()*2.2,8);
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  return t;
+}
+
+const bezelMat=metalMat(FINISHES[0].metal,0.07);                 // mirror polish
+const bandMat =metalMat(FINISHES[0].metal,0.62);                 // roughness scaled by the map
+bandMat.roughnessMap=brushMap();
+const backRimMat=metalMat(FINISHES[0].metal,0.11);
+const crownMat=metalMat(FINISHES[0].metal,0.24); crownMat.flatShading=true;
+const caseMat=bezelMat;
+
+latheOf(P_BEZEL,bezelMat);
+latheOf(P_BAND, bandMat);
+latheOf(P_BACK, backRimMat);
+
+const dialMat=new THREE.MeshStandardMaterial({map:dialTex,roughness:0.52,metalness:0.0});
+const dialMesh=new THREE.Mesh(new THREE.CircleGeometry(0.84,96),dialMat);
+dialMesh.position.z=FRONT_Z; spin.add(dialMesh);
+
+const backMat=new THREE.MeshStandardMaterial({map:backTex,roughness:0.30,metalness:0.72});
+const backMesh=new THREE.Mesh(new THREE.CircleGeometry(0.935,96),backMat);
+backMesh.position.z=BACK_Z; backMesh.rotation.y=Math.PI; spin.add(backMesh);
+
+/* sapphire: a high dome that stands proud of the bezel, the way a pocket watch crystal does */
+const R_SPH=5.5, capAngle=Math.asin(0.862/R_SPH);
+const crystal=new THREE.Mesh(
+  new THREE.SphereGeometry(R_SPH,72,28,0,TAU,0,capAngle),
+  new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:0.015,transparent:true,
+    opacity:0.19,envMapIntensity:3.4,ior:1.76,clearcoat:1,clearcoatRoughness:0.01,depthWrite:false})
+);
+crystal.rotation.x=Math.PI/2;
+crystal.position.z=CRYSTAL_Z-R_SPH*Math.cos(capAngle);
+spin.add(crystal);
+
+/* pendant, crown, bow — their axis IS the rotation axis, so they spin in place */
+const pendant=new THREE.Mesh(new THREE.CylinderGeometry(0.108,0.132,0.20,32),bezelMat);
+pendant.position.y=1.088; spin.add(pendant);
+const collar=new THREE.Mesh(new THREE.CylinderGeometry(0.140,0.140,0.030,32),backRimMat);
+collar.position.y=1.200; spin.add(collar);
+const crown=new THREE.Mesh(new THREE.CylinderGeometry(0.152,0.152,0.120,22),crownMat);
+crown.position.y=1.278; spin.add(crown);
+const bow=new THREE.Mesh(new THREE.TorusGeometry(0.152,0.036,24,72),bezelMat);
+bow.position.y=1.452; spin.add(bow);
+
+const goldMats=[bezelMat,bandMat,backRimMat,crownMat];
+spin.traverse(o=>{ if(o.isMesh && o!==crystal) o.castShadow=true; });
+
+/* =========================================================
+   the turn: angular velocity under a restoring torque
+   ========================================================= */
+let theta=0, omega=0, phi=0, vphi=0, prevOmega=0, frozen=false;
+let dragging=false, lastX=0, lastT=0, moved=0, sens=0.0085;
+function setSens(w){ sens=Math.PI/Math.max(120,w*0.55); }
+
+function step(dt){
+  if(frozen){ spin.rotation.y=theta; swingGroup.rotation.z=phi; return; }
+  const sub=Math.max(1,Math.min(6,Math.ceil(dt/0.006)));
+  const h=dt/sub;
+  for(let i=0;i<sub;i++){
+    if(!dragging){
+      omega += (-state.K*Math.sin(2*theta) - state.C*omega)*h;
+      omega = Math.max(-60,Math.min(60,omega));
+      theta += omega*h;
+    }
+    // the bow is a pivot: angular acceleration makes the watch rock and settle
+    const drive=(omega-prevOmega)*state.swing*0.0016;
+    vphi += (-150*phi - 6.2*vphi)*h - drive;
+    phi  += vphi*h;
+    prevOmega=omega;
+  }
+  if(!dragging && Math.abs(omega)<0.004){
+    const near=Math.round(theta/Math.PI)*Math.PI;
+    if(Math.abs(theta-near)<0.004){ theta=near; omega=0; }
+  }
+  phi=Math.max(-0.075,Math.min(0.075,phi));
+  spin.rotation.y=theta;
+  swingGroup.rotation.z=phi;
+}
+function windOver(){
+  frozen=false;
+  // enough energy to clear the barrier at 90°, and no more
+  const target=(Math.abs(((theta%TAU)+TAU)%TAU - Math.PI)<Math.PI/2)?0:Math.PI;
+  const diff=Math.atan2(Math.sin(target-theta),Math.cos(target-theta));
+  omega = (diff>=0?1:-1) * Math.sqrt(2*state.K) * 1.45;
+}
+glCanvas.addEventListener("pointerdown",e=>{
+  frozen=false;
+  dragging=true;moved=0;lastX=e.clientX;lastT=performance.now();
+  glCanvas.setPointerCapture(e.pointerId); glCanvas.classList.add("grabbing");
+});
+glCanvas.addEventListener("pointermove",e=>{
+  if(!dragging) return;
+  const now=performance.now(), dt=Math.max(8,now-lastT)/1000;
+  const dx=e.clientX-lastX;
+  moved+=Math.abs(dx);
+  const dTheta=dx*sens;
+  theta+=dTheta;
+  omega=omega*0.45 + (dTheta/dt)*0.55;      // keep the speed you are moving at
+  lastX=e.clientX; lastT=now;
+});
+function release(){
+  if(!dragging) return;
+  dragging=false; glCanvas.classList.remove("grabbing");
+  if(performance.now()-lastT>110) omega=0;   // held still before letting go
+  if(moved<5) windOver();                    // a tap winds it, a drag keeps its speed
+}
+glCanvas.addEventListener("pointerup",release);
+glCanvas.addEventListener("pointercancel",release);
+document.getElementById("flipBtn").addEventListener("click",windOver);
+glCanvas.setAttribute("tabindex","0");
+glCanvas.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();windOver();} });
+
+/* ---- the settings plate tracks the caseback once it faces you ---- */
+const centre=new THREE.Vector3(), edge=new THREE.Vector3();
+function placePlate(w,h){
+  centre.set(0,0,BACK_Z).applyMatrix4(spin.matrixWorld).project(camera);
+  edge.set(1,0,BACK_Z).applyMatrix4(spin.matrixWorld).project(camera);
+  const cx=(centre.x*.5+.5)*w, cy=(-centre.y*.5+.5)*h;
+  const ex=(edge.x*.5+.5)*w,   ey=(-edge.y*.5+.5)*h;
+  const radiusPx=Math.hypot(ex-cx,ey-cy);
+  const facing=-Math.cos(theta);
+  const scale=(radiusPx*2)/420*0.86;
+  const vis=Math.max(0,Math.min(1,(facing-0.55)/0.40));
+  plateEl.style.left=cx+"px"; plateEl.style.top=cy+"px";
+  plateEl.style.transform="translate(-50%,-50%) rotate("+phi+"rad) scale("+scale.toFixed(4)+
+      ") scaleX("+Math.max(0.02,Math.abs(Math.cos(theta))).toFixed(4)+")";
+  plateEl.style.opacity=vis.toFixed(3);
+  plateEl.style.pointerEvents=(facing>0.93&&Math.abs(omega)<0.5)?"auto":"none";
+  document.getElementById("cardwrap").style.opacity=(Math.max(0,Math.cos(theta))).toFixed(3);
+}
+
+/* ---- the card ---- */
+const cardCv=document.getElementById("card"), cg=cardCv.getContext("2d");
+function renderCard(){
+  const rows=cardRows(), wrap=document.getElementById("cardwrap");
+  const w=wrap.getBoundingClientRect().width; if(!w) return;
+  const k=w/440, dpr=Math.min(window.devicePixelRatio||1,2);
+  const hgt=Math.round((rows.length?66+rows.length*27+18:44)*k);
+  wrap.style.height=hgt+"px";
+  cardCv.width=Math.round(w*dpr); cardCv.height=Math.round(hgt*dpr);
+  cg.setTransform(dpr,0,0,dpr,0,0); cg.clearRect(0,0,w,hgt);
+  cg.save();cg.translate(w/2,0);cg.scale(k,k);cg.textBaseline="alphabetic";
+  if(state.ambient) cg.globalAlpha=125/255;
+  drawCard(cg,FINISHES[state.finish],new Date(),rows);
+  cg.restore();
+}
+
+/* ---- loop ---- */
+const rAngle=document.getElementById("rAngle"),rOmega=document.getElementById("rOmega"),rMs=document.getElementById("rMs");
+let prev=null, msEma=0, uiAt=0, cardAt=0, paintAt=-1e9;
+function resize(){
+  const r=screenEl.getBoundingClientRect();
+  renderer.setSize(r.width,r.height,false);
+  camera.aspect=r.width/r.height; camera.updateProjectionMatrix();
+  setSens(r.width);
+  return r;
+}
+paintBack(); paintDial(); renderCard();
+const _a=location.hash.match(/a=(-?[\d.]+)/);
+if(_a){ theta=+_a[1]*RAD; frozen=true; }   // deep-linked angle, held until you touch it
+const _f=location.hash.match(/f=([012])/);
+if(_f){ state.finish=+_f[1]; staticKey="";
+  const m=FINISHES[state.finish].metal; goldMats.forEach(mt=>mt.color.setHex(m));
+  Array.from(document.getElementById("finish").children)
+       .forEach((c,i)=>c.setAttribute("aria-pressed",String(i===state.finish)));
+  paintBack(); renderCard(); }
+function loop(now){
+  const t0=performance.now();
+  if(prev===null) prev=now;
+  const dt=Math.max(0,Math.min(0.05,(now-prev)/1000)); prev=now;
+  const r=resize();
+  step(dt);
+  // a 1024² upload is the most expensive thing here: only when it is visible, and only as
+  // often as the seconds hand actually needs
+  const every=(state.sweep&&!state.ambient)?33:1000;
+  if(now-paintAt>every && Math.cos(theta)>-0.15){ paintDial(); paintAt=now; }
+  swingGroup.updateMatrixWorld(true);
+  renderer.render(scene,camera);
+  placePlate(r.width,r.height);
+  if(now-cardAt>20000){cardAt=now;renderCard();}
+  msEma=msEma?msEma*.9+(performance.now()-t0)*.1:(performance.now()-t0);
+  if(now-uiAt>220){
+    uiAt=now;
+    rAngle.textContent=Math.round(((theta/RAD)%360+360)%360)+"°";
+    rOmega.textContent=omega.toFixed(1);
+    rMs.textContent=msEma.toFixed(1)+" ms";
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---- wiring ---- */
+function seg(id,apply){
+  const box=document.getElementById(id);
+  box.addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    Array.from(box.children).forEach(c=>c.setAttribute("aria-pressed",String(c===b)));
+    apply(b.dataset.v!==undefined?b.dataset.v:+b.dataset.i);
+  });
+}
+seg("finish",v=>{
+  state.finish=v; staticKey="";
+  const m=FINISHES[v].metal; goldMats.forEach(mt=>mt.color.setHex(m));
+  paintBack(); renderCard();
+});
+seg("bottom",v=>{state.bottom=v;});
+seg("cond",v=>{state.cond=v;});
+const bind=(id,k,after)=>document.getElementById(id)
+  .addEventListener("change",e=>{state[k]=e.target.checked; if(after)after();});
+bind("mAmbient","ambient",renderCard); bind("mSweep","sweep");
+bind("mWeather","weather"); bind("mAlerts","alerts",renderCard);
+bind("mAlarm","alarm",renderCard); bind("mEvent","event",renderCard);
+bind("charging","charging");
+const V=(id,f)=>{const el=document.getElementById(id),out=document.getElementById(id+"V");
+  el.addEventListener("input",e=>{out.textContent=f(+e.target.value);});};
+V("temp",v=>{state.temp=v;return v+"°";});
+V("batt",v=>{state.batt=v;return v+"%";});
+V("alerts",v=>{state.alertN=v;renderCard();return v;});
+V("detent",v=>{state.K=v;return v;});
+V("drag",v=>{state.C=v/10;return (v/10).toFixed(1);});
+V("swing",v=>{state.swing=v;return v;});
+document.getElementById("setDream").addEventListener("click",function(){
+  this.textContent="Opens Android settings"; this.disabled=true;
+  setTimeout(()=>{this.textContent="Set as screensaver";this.disabled=false;},2200);
+});
+new ResizeObserver(renderCard).observe(screenEl);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{staticKey="";paintBack();renderCard();});
+}
+</script>

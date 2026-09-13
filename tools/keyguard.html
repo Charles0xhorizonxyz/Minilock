@@ -1,0 +1,569 @@
+<title>Miniscreen Keyguard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Noto+Serif&family=Roboto:wght@300;400;500&display=swap">
+<style>
+:root{
+  --ink:#07090C; --raised:#131921; --line:#1C232B; --line-soft:#151B22;
+  --text:#DFE3E8; --muted:#7C8894; --dim:#5A6572; --accent:#C9AA7C;
+  --free:#8FAE8B; --warn:#C98A8A;
+  --serif:"Cormorant Garamond",Georgia,serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--ink);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;
+  padding-inline:20px;padding-block:0 56px;max-width:1180px;margin:0 auto}
+header{padding-block:38px 22px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--serif);font-weight:300;font-size:clamp(34px,6vw,54px);line-height:1.02;margin:0;text-wrap:balance}
+.lede{color:var(--muted);margin:12px 0 0;max-width:66ch;font-size:14.5px}
+.lede em{color:var(--text);font-style:normal}
+
+.controls{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-end;padding-block:20px;border-bottom:1px solid var(--line)}
+.ctl{display:flex;flex-direction:column;gap:7px}
+.ctl>span{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.seg{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg button{appearance:none;background:transparent;border:0;border-right:1px solid var(--line);color:var(--muted);
+  font-family:var(--sans);font-size:12.5px;padding:6px 12px;cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--raised);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+.seg button:hover{color:var(--text)}
+label.sw{display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--muted);font-size:12.5px}
+label.sw input{appearance:none;width:30px;height:17px;border-radius:9px;border:1px solid var(--line);
+  background:#0A0E13;position:relative;cursor:pointer;flex:none;margin:0}
+label.sw input::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;
+  background:var(--dim);transition:transform .16s,background .16s}
+label.sw input:checked{background:#251F16;border-color:#4A3E2C}
+label.sw input:checked::after{transform:translateX(13px);background:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.stage{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:26px;padding-block:26px;max-width:780px}
+.col h2{font-family:var(--sans);font-weight:500;font-size:13px;margin:0 0 2px}
+.col h2 .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;margin-left:8px}
+.col .stock{color:var(--muted)} .col .ours{color:var(--accent)}
+.col p.sub{font-family:var(--mono);font-size:10px;color:var(--dim);margin:0 0 10px}
+
+/* Pixel 7 lock screen, 1080 x 2400 */
+.phone{position:relative;aspect-ratio:9/20;background:#000;border:1px solid #22282F;border-radius:22px;
+  overflow:hidden;display:flex;flex-direction:column;color:#fff;
+  font-family:"Roboto",system-ui,sans-serif;container-type:inline-size}
+.phone.aod{filter:brightness(.5)}
+.statusbar{display:flex;justify-content:space-between;align-items:center;
+  padding:3.2cqw 5cqw 0;font-size:3.1cqw;color:#e8eaed;font-weight:500}
+.statusbar .ic{display:flex;gap:1.6cqw;align-items:center;opacity:.95}
+.clockzone{display:flex;flex-direction:column;align-items:center;padding-top:3cqw}
+.bigclock{font-weight:300;font-size:23cqw;line-height:.94;letter-spacing:-0.02em;color:#c7d6ff;text-align:center}
+.dialwrap{width:var(--dialw,62cqw);aspect-ratio:1}
+.dialwrap canvas{display:block;width:100%;height:100%}
+.smartspace{display:flex;align-items:center;gap:2cqw;font-size:3.4cqw;color:#dfe2e6;margin-top:2.4cqw;opacity:.92}
+.smartspace .dot{opacity:.5}
+.notifs{flex:1;display:flex;flex-direction:column;gap:2cqw;padding:5cqw 4cqw 0;overflow:hidden}
+.nf{display:flex;gap:2.6cqw;align-items:center;background:rgba(255,255,255,.07);
+  border-radius:5cqw;padding:3cqw 3.4cqw}
+.nf .av{width:7cqw;height:7cqw;border-radius:50%;flex:none}
+.nf .tx{min-width:0}
+.nf .tt{font-size:3.3cqw;font-weight:500;color:#eceff1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nf .bd{font-size:3.1cqw;color:#b6bcc2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bottom{display:flex;justify-content:space-between;align-items:flex-end;padding:0 6cqw 4cqw}
+.shortcut{width:12cqw;height:12cqw;border-radius:50%;background:rgba(255,255,255,.14);
+  display:grid;place-items:center;font-size:5cqw}
+.unlock{display:flex;flex-direction:column;align-items:center;gap:1.6cqw;padding-bottom:1cqw}
+.fp{width:9cqw;height:9cqw;border-radius:50%;border:.5cqw solid rgba(255,255,255,.55);opacity:.85}
+.charged{font-size:3cqw;color:#cfd4d9;opacity:.85}
+
+.legend{display:flex;gap:20px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;color:var(--dim);padding-bottom:6px}
+.legend b{font-weight:400;color:var(--accent)}
+
+.notes{border-top:1px solid var(--line);padding-block:24px 0}
+.notes h3{font-family:var(--serif);font-weight:500;font-size:25px;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px}
+.grid h4{font-family:var(--sans);font-weight:500;font-size:12.5px;margin:0 0 6px}
+.grid h4 span{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;margin-left:8px;color:var(--free)}
+.grid h4 span.w{color:var(--warn)}
+.grid p{margin:0;color:var(--muted);font-size:12px}
+.grid code{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.grid em{font-style:normal;color:var(--text)}
+</style>
+
+<header>
+  <p class="eyebrow">Miniscreen &mdash; custom GrapheneOS keyguard</p>
+  <h1>Miniscreen Keyguard</h1>
+  <p class="lede">What a custom build would actually put on the lock screen. The dial replaces the clock rather than sitting behind it, so nothing overlaps &mdash; <em>we become the clock</em>. Everything else is real AOSP keyguard furniture, left alone. Stock GrapheneOS on the left for comparison.</p>
+</header>
+
+<div class="controls">
+  <div class="ctl"><span>Gold</span>
+    <div class="seg" id="gold" role="group" aria-label="Gold alloy">
+      <button type="button" data-i="0" aria-pressed="true">24k</button>
+      <button type="button" data-i="1" aria-pressed="false">Rose</button>
+      <button type="button" data-i="2" aria-pressed="false">Purple</button>
+    </div>
+  </div>
+  <div class="ctl"><span>Dial size</span>
+    <div class="seg" id="size" role="group" aria-label="Dial size">
+      <button type="button" data-v="52" aria-pressed="false">Compact</button>
+      <button type="button" data-v="62" aria-pressed="true">Standard</button>
+      <button type="button" data-v="76" aria-pressed="false">Full bleed</button>
+    </div>
+  </div>
+  <div class="ctl"><span>Notifications</span>
+    <div class="seg" id="notifs" role="group" aria-label="Notification count">
+      <button type="button" data-v="0" aria-pressed="false">None</button>
+      <button type="button" data-v="2" aria-pressed="true">Two</button>
+      <button type="button" data-v="4" aria-pressed="false">Four</button>
+    </div>
+  </div>
+  <div class="ctl"><span>State</span>
+    <label class="sw"><input type="checkbox" id="aod"> Always-on display</label>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="col">
+    <h2>Stock<span class="tag stock">GrapheneOS today</span></h2>
+    <p class="sub">AOSP default clock</p>
+    <div class="phone" id="phoneA"></div>
+  </div>
+  <div class="col">
+    <h2>Miniscreen<span class="tag ours">clock plugin</span></h2>
+    <p class="sub">Same furniture, our clock</p>
+    <div class="phone" id="phoneB"></div>
+  </div>
+</div>
+<p class="legend"><span><b>&#9632;</b> the clock slot is all our patch fills</span><span>status bar, notifications, shortcuts and unlock are untouched AOSP</span></p>
+
+<section class="notes">
+  <h3>What the patch actually touches</h3>
+  <div class="grid">
+    <div>
+      <h4>One component<span>small patch</span></h4>
+      <p>A <code>ClockProviderPlugin</code> implementation, plus the SystemUI change that lets plugins signed with <em>your</em> key load on a user build. The keyguard's layout, notifications, shortcuts and unlock flow are untouched &mdash; we only fill the slot AOSP already reserves for a clock.</p>
+    </div>
+    <div>
+      <h4>No overlap problem<span>solved</span></h4>
+      <p>The live wallpaper put the dial <em>behind</em> a big digital clock. As a clock plugin there is no second clock: AOSP hands us the slot and we render into it at whatever size we ask for.</p>
+    </div>
+    <div>
+      <h4>Iterate without reflashing<span>the point</span></h4>
+      <p>Build the OS once with the plugin hook. After that the dial ships as an ordinary APK, so new alloys, complications and layouts are a normal app update. Only GrapheneOS security releases need a rebuild, and your lock screen survives them.</p>
+    </div>
+    <div>
+      <h4>Always-on display<span>free</span></h4>
+      <p>AOD asks the clock plugin for a dimmed, low-refresh variant. Ambient mode already is exactly that &mdash; dimmed dial, seconds hidden, one update a second, slow drift against burn-in. It maps straight across.</p>
+    </div>
+    <div>
+      <h4>Drawn with Canvas<span>ports</span></h4>
+      <p>The plugin returns a <code>View</code>, and <code>WatchView</code> is already a plain Canvas view, so the dial code moves into SystemUI essentially unchanged. These are the same routines drawing this mock.</p>
+    </div>
+    <div>
+      <h4>What it costs<span class="w">be clear</span></h4>
+      <p>Unlocking the bootloader wipes the phone once. You hold your own signing keys and must back them up &mdash; losing them means another wipe. Each GrapheneOS security release needs a scripted rebuild and flash to stay current.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+"use strict";
+const TAU=Math.PI*2, RAD=Math.PI/180;
+const SERIF='"Noto Serif", Georgia, serif', SANS='"Roboto", system-ui, sans-serif';
+const RES=Math.min(3,(window.devicePixelRatio||1)*2);
+const FINISHES=[
+  {name:"24k",    gold:"#E2C089", light:"#FFF2D0", dial:"#142B40"},
+  {name:"Rose",   gold:"#DDA994", light:"#FFE1CE", dial:"#2E2021"},
+  {name:"Purple", gold:"#B296C8", light:"#EDE0F6", dial:"#23202E"}
+];
+const DAYS=["M","T","W","T","F","S","S"], DATES=["1","5","10","15","20","25"], HOURS=["0","4","8","12","16","20"];
+const GARNET="#9E4A46";
+const hx=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+function rgba(h,a){const c=hx(h);return "rgba("+c[0]+","+c[1]+","+c[2]+","+a+")";}
+function mix(a,b,t){const x=hx(a),y=hx(b);
+  return "rgb("+Math.round(x[0]+(y[0]-x[0])*t)+","+Math.round(x[1]+(y[1]-x[1])*t)+","+Math.round(x[2]+(y[2]-x[2])*t)+")";}
+const state={finish:0,ambient:false,units:"C",temp:18,cond:"clear",batt:64,charging:true,
+  alerts:true,alertN:2,privacy:"senders",bottom:"power",
+  on:{weather:true,alerts:true,alarm:true,event:true,battery:true,moon:true}};
+const ui={size:62,notifs:2};
+
+/* primitives */
+function circle(g,x,y,r,f){g.beginPath();g.arc(x,y,r,0,TAU);g.fillStyle=f;g.fill();}
+function ring(g,x,y,r,s,w){g.beginPath();g.arc(x,y,r,0,TAU);g.strokeStyle=s;g.lineWidth=w;g.stroke();}
+function arc(g,x,y,r,a0,a1,s,w,cap){g.beginPath();g.arc(x,y,r,a0,a1);g.strokeStyle=s;g.lineWidth=w;g.lineCap=cap||"butt";g.stroke();g.lineCap="butt";}
+function line(g,x1,y1,x2,y2,s,w){g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.strokeStyle=s;g.lineWidth=w;g.stroke();}
+function poly(g,p,f,s,w){g.beginPath();g.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)g.lineTo(p[i],p[i+1]);g.closePath();
+  if(f){g.fillStyle=f;g.fill();} if(s){g.strokeStyle=s;g.lineWidth=w;g.stroke();}}
+function rrect(g,x,y,w,h,r,f){g.beginPath();g.roundRect(x,y,w,h,r);g.fillStyle=f;g.fill();}
+function rect(g,x,y,w,h,f){g.fillStyle=f;g.fillRect(x,y,w,h);}
+function txt(g,s,x,y,size,color,serif,align,ls){
+  g.fillStyle=color; g.font=size+"px "+(serif?SERIF:SANS);
+  g.textAlign=align||"center";
+  if("letterSpacing" in g) g.letterSpacing=(ls||0)+"em";   // ports to Paint.setLetterSpacing
+  g.fillText(s,x,y);
+  if("letterSpacing" in g) g.letterSpacing="0em";
+  g.textAlign="center";
+}
+
+/* ---------------- static dial ---------------- */
+function drawStatic(g,F){
+  const bez=g.createLinearGradient(-260,-280,220,290);
+  bez.addColorStop(0,"#302E2B");bez.addColorStop(.25,F.light);bez.addColorStop(.5,"#685A46");
+  bez.addColorStop(.75,F.gold);bez.addColorStop(1,"#24282B");
+  circle(g,0,0,291,bez);
+  circle(g,0,0,282,"#11171D");
+  const re=g.createLinearGradient(-200,-230,180,240);
+  re.addColorStop(0,"rgba(255,255,255,.10)");re.addColorStop(.34,"rgba(255,255,255,.015)");
+  re.addColorStop(.62,"rgba(0,0,0,.30)");re.addColorStop(1,"rgba(255,255,255,.05)");
+  g.save();g.beginPath();g.arc(0,0,282,0,TAU);g.arc(0,0,270,0,TAU,true);g.clip();
+  g.fillStyle=re;g.fillRect(-291,-291,582,582);g.restore();
+  ring(g,0,0,279,F.gold,1);
+
+  const dg=g.createRadialGradient(-80,-100,0,-80,-100,480);
+  dg.addColorStop(0,F.dial);dg.addColorStop(1,"#080E17");
+  circle(g,0,0,270,dg);
+
+  g.save();g.beginPath();g.arc(0,0,246,0,TAU);g.clip();
+  if(g.createConicGradient){
+    const sh=g.createConicGradient(0,0,0);
+    for(let i=0;i<=8;i++) sh.addColorStop(i/8, i%2===0?"rgba(214,232,255,.085)":"rgba(0,0,0,.16)");
+    g.fillStyle=sh;g.fillRect(-250,-250,500,500);
+  }
+  for(let i=0;i<240;i++){g.save();g.rotate(i*TAU/240);
+    line(g,0,-36,0,-250,i%2?"rgba(216,234,255,.045)":"rgba(0,0,0,.10)",.9);g.restore();}
+  const vig=g.createRadialGradient(0,0,132,0,0,252);
+  vig.addColorStop(0,"rgba(0,0,0,0)");vig.addColorStop(.72,"rgba(0,0,0,.18)");vig.addColorStop(1,"rgba(0,0,0,.52)");
+  circle(g,0,0,248,vig);
+  g.restore();
+
+  const inn=g.createRadialGradient(0,0,228,0,0,272);
+  inn.addColorStop(0,"rgba(0,0,0,0)");inn.addColorStop(.62,"rgba(0,0,0,.26)");inn.addColorStop(1,"rgba(0,0,0,.72)");
+  circle(g,0,0,270,inn); ring(g,0,0,269,"rgba(255,255,255,.05)",1);
+
+  ring(g,0,0,246,"#53606A",.7); ring(g,0,0,239,"#333E49",.6);
+
+  for(let i=0;i<60;i++){
+    g.save();g.rotate(i*6*RAD);
+    if(i%5===0) poly(g,[-1.5,-253,1.5,-253,2.4,-265,-2.4,-265],F.gold,null,0);
+    else        line(g,0,-255,0,-261,"#8B99A4",.9);
+    g.restore();
+  }
+  for(let i=1;i<=12;i++){
+    g.save();g.rotate(i*30*RAD);
+    if(i===12){baton(g,F,-6.6,4.4);baton(g,F,6.6,4.4);} else baton(g,F,0,10);
+    g.restore();
+  }
+  txt(g,"MINISCREEN",0,-138,17,F.light,true,"center",.30);
+  txt(g,"EDITION 01",0,-118,7.5,F.gold,false,"center",.34);
+}
+function baton(g,F,cx,w){
+  const h1=-229,h2=-201,half=w/2;
+  rrect(g,cx-half+.9,h1+1.4,w,28,1.4,"rgba(0,0,0,.55)");
+  poly(g,[cx,h1+1.2,cx+half,h1+4,cx+half,h2,cx,h2-1.2],mix(F.gold,"#000000",.46),null,0);
+  poly(g,[cx,h1+1.2,cx-half,h1+4,cx-half,h2,cx,h2-1.2],F.light,null,0);
+  poly(g,[cx-half,h1+4,cx,h1-1.4,cx+half,h1+4],mix(F.light,F.gold,.55),null,0);
+  line(g,cx,h1,cx,h2-1,"rgba(255,255,255,.42)",.7);
+  poly(g,[cx-half,h1+4,cx,h1-1.4,cx+half,h1+4,cx+half,h2,cx-half,h2],null,"rgba(0,0,0,.55)",.7);
+}
+
+/* ---------------- counters ---------------- */
+function well(g,F,x,y,r){                       // recessed, azuré counter well
+  circle(g,x,y,r,"#0B1520");
+  g.save();g.beginPath();g.arc(x,y,r-5,0,TAU);g.clip();
+  for(let i=8;i<=r-6;i+=3.2) ring(g,x,y,i,"rgba(206,226,246,.05)",.55);
+  const rec=g.createRadialGradient(x,y,r*.55,x,y,r);
+  rec.addColorStop(0,"rgba(0,0,0,0)");rec.addColorStop(1,"rgba(0,0,0,.58)");
+  circle(g,x,y,r,rec); g.restore();
+  ring(g,x,y,r,mix("#786D5E",F.gold,.5),1.3);
+  ring(g,x,y,r-2,"rgba(0,0,0,.5)",1);
+}
+function counterHand(g,F,x,y,angle,len){
+  g.save();g.translate(x,y);g.rotate(angle*RAD);
+  poly(g,[-1.3,7,-.5,-len,.5,-len,1.3,7],F.light,"rgba(0,0,0,.5)",.5);
+  circle(g,0,0,3,F.gold); g.restore();
+}
+
+function pointerCounter(g,F,x,y,title,labels,angle){   // day / date / 24h
+  well(g,F,x,y,62); ring(g,x,y,57,"#293642",1);
+  for(let i=0;i<30;i++){const a=i*Math.PI/15,s=Math.sin(a),c=Math.cos(a);
+    line(g,x+s*52,y-c*52,x+s*55,y-c*55,"#71808C",.7);}
+  for(let i=0;i<labels.length;i++){
+    const a=title==="DATE"?(parseInt(labels[i],10)-1)*TAU/31:i*TAU/labels.length;
+    txt(g,labels[i],x+Math.sin(a)*42,y-Math.cos(a)*42+3,8,F.gold,false);
+  }
+  txt(g,title,x,y+23,7,"#9DA7AC",false,"center",.12);
+  counterHand(g,F,x,y,angle,33);
+}
+
+/* Thermometer counter: sector scale, condition drawn at centre. */
+function weatherCounter(g,F,x,y,tempC){
+  well(g,F,x,y,62);
+  const A0=-126*RAD, A1=126*RAD;                       // sweep, 0 at 12 o'clock
+  const lo=-10, hi=40, t=Math.max(lo,Math.min(hi,tempC));
+  const at=v=>A0+(A1-A0)*(v-lo)/(hi-lo);
+  const toXY=(a,r)=>[x+Math.sin(a)*r, y-Math.cos(a)*r];
+  arc(g,x,y,52,at(lo)-Math.PI/2,at(hi)-Math.PI/2,"#4C5A66",.8);
+  for(let v=lo; v<=hi; v+=5){
+    const a=at(v), major=v%10===0, r0=major?45:48.5;
+    const p0=toXY(a,r0), p1=toXY(a,52.5);
+    line(g,p0[0],p0[1],p1[0],p1[1], major?F.gold:"#71808C", major?1.2:.7);
+    if(v%20===0){ const pl=toXY(a,37); txt(g,String(v),pl[0],pl[1]+3,7.5,"#9DA7AC",false); }
+  }
+  // freezing mark, in garnet — the one coloured thing on the counter
+  const fz=toXY(at(0),52.5), fz0=toXY(at(0),44);
+  line(g,fz0[0],fz0[1],fz[0],fz[1],GARNET,1.6);
+  glyph(g,F,x,y-9,state.cond);
+  txt(g,fmtTemp(tempC),x,y+30,13,F.light,true);
+  counterHand(g,F,x,y,at(t)/RAD,44);
+}
+function fmtTemp(c){ return state.units==="F" ? Math.round(c*9/5+32)+"°" : Math.round(c)+"°"; }
+
+/* Condition glyphs — plain paths, so they port to Android as Path objects. */
+function glyph(g,F,x,y,cond){
+  const L=F.light, D="#93A3B0";
+  if(cond==="clear"){
+    circle(g,x,y,7.5,L);
+    for(let i=0;i<8;i++){const a=i*TAU/8;
+      line(g,x+Math.sin(a)*10.5,y-Math.cos(a)*10.5,x+Math.sin(a)*14,y-Math.cos(a)*14,L,1.3);}
+    return;
+  }
+  const cloud=(cx,cy,s,col)=>{
+    g.beginPath();
+    g.arc(cx-5*s,cy+1*s,4.6*s,0,TAU); g.arc(cx+.5*s,cy-3*s,6.4*s,0,TAU);
+    g.arc(cx+6.5*s,cy+1*s,5*s,0,TAU); g.rect(cx-9.6*s,cy+1*s,16.2*s,4.6*s);
+    g.fillStyle=col; g.fill();
+  };
+  if(cond==="cloud"){ circle(g,x+6,y-6,6,rgba(F.gold,.5)); cloud(x-1,y,1,L); return; }
+  cloud(x,y-4,.92,D);
+  if(cond==="rain"){ for(let i=-1;i<=1;i++) line(g,x+i*6.5,y+5,x+i*6.5-2.4,y+13,"#8FB6CF",1.5); }
+  if(cond==="snow"){ for(let i=-1;i<=1;i++){const px=x+i*6.5,py=y+9;
+      for(let k=0;k<3;k++){const a=k*Math.PI/3; line(g,px-Math.sin(a)*3,py-Math.cos(a)*3,px+Math.sin(a)*3,py+Math.cos(a)*3,L,1);} } }
+  if(cond==="storm"){ poly(g,[x+1,y+4,x-5,y+14,x-.5,y+14,x-3,y+22,x+6,y+10,x+1,y+10],F.gold,null,0); }
+}
+
+/* Power reserve: 0 at left, full at right, across the top of the counter. */
+function powerCounter(g,F,x,y,pct,charging){
+  well(g,F,x,y,62);
+  const A0=-118*RAD, A1=118*RAD, at=v=>A0+(A1-A0)*v/100;
+  const toXY=(a,r)=>[x+Math.sin(a)*r,y-Math.cos(a)*r];
+  arc(g,x,y,52,A0-Math.PI/2,A1-Math.PI/2,"#4C5A66",.8);
+  // reserve consumed reads garnet at the empty end, gold where charge remains
+  arc(g,x,y,52,A0-Math.PI/2,at(Math.min(pct,18))-Math.PI/2, pct<=18?GARNET:"#5B4A46",2.6,"round");
+  arc(g,x,y,52,at(Math.max(pct,0))-Math.PI/2,A1-Math.PI/2, charging?rgba(F.gold,.42):"rgba(0,0,0,0)",2.6,"round");
+  for(let v=0;v<=100;v+=12.5){
+    const a=at(v),major=v%25===0,p0=toXY(a,major?45:48.5),p1=toXY(a,52.5);
+    line(g,p0[0],p0[1],p1[0],p1[1],major?F.gold:"#71808C",major?1.2:.7);
+  }
+  txt(g,"0",toXY(at(0),36)[0],toXY(at(0),36)[1]+3,7.5,"#9DA7AC",false);
+  txt(g,"100",toXY(at(100),36)[0],toXY(at(100),36)[1]+3,7.5,"#9DA7AC",false);
+  txt(g,"RÉSERVE",x,y+30,7,"#9DA7AC",false,"center",.12);
+  txt(g,pct+"%",x,y-6,13,pct<=18?GARNET:F.light,true);
+  if(charging){ const p=toXY(at(100),52.5);
+    poly(g,[p[0],p[1]-6,p[0]-3.4,p[1]+1,p[0]-.6,p[1]+1,p[0]-1.6,p[1]+7,p[0]+3.4,p[1]-1,p[0]+.6,p[1]-1],F.gold,null,0); }
+  counterHand(g,F,x,y,at(pct)/RAD,44);
+}
+
+/* Moonphase: synodic month, no data source at all. */
+const SYN=29.530588853*86400000, NEW0=Date.UTC(2000,0,6,18,14);
+function moonPhase(t){ let p=((t-NEW0)%SYN)/SYN; return p<0?p+1:p; }
+function moonCounter(g,F,x,y,t){
+  circle(g,x,y,62,"#060B14");
+  const sky=g.createRadialGradient(x,y-14,6,x,y,62);
+  sky.addColorStop(0,"#16283D");sky.addColorStop(1,"#050A12");
+  circle(g,x,y,60,sky);
+  for(let i=0;i<11;i++){const a=i*2.399,r=16+((i*37)%42);
+    circle(g,x+Math.cos(a)*r,y+Math.sin(a)*r*.8,i%3?.9:1.4,rgba(F.gold,i%3?.45:.8));}
+  const ph=moonPhase(t), k=Math.cos(ph*TAU), r=22, wax=ph<0.5;
+  g.save();g.beginPath();g.arc(x,y,r,0,TAU);g.clip();
+  circle(g,x,y,r,"#1A2432");
+  g.beginPath(); g.rect(wax?x:x-r, y-r, r, r*2); g.fillStyle="#E8E3D4"; g.fill();
+  g.beginPath(); g.ellipse(x,y,Math.max(.01,r*Math.abs(k)),r,0,0,TAU);
+  g.fillStyle = k>0 ? "#1A2432" : "#E8E3D4"; g.fill();
+  circle(g,x-7,y-6,3.4,"rgba(120,124,130,.30)"); circle(g,x+5,y+7,2.4,"rgba(120,124,130,.26)");
+  g.restore();
+  ring(g,x,y,r,"rgba(0,0,0,.55)",1.4);
+  ring(g,x,y,62,mix("#786D5E",F.gold,.5),1.3);
+  txt(g,"ÂGE "+Math.round(ph*29.53)+"j",x,y+44,7,"#9DA7AC",false,"center",.12);
+  txt(g,"PHASE DE LUNE",x,y+30,7,"#9DA7AC",false,"center",.12);
+}
+
+/* Guichet: recessed window under the hands. */
+function guichet(g,F,x,y,n){
+  const w=76,h=24;
+  rrect(g,-w/2+x,y-h/2,w,h,3,"#060A10");
+  g.save();g.beginPath();g.roundRect(-w/2+x,y-h/2,w,h,3);g.clip();
+  const sh=g.createLinearGradient(0,y-h/2,0,y+h/2);
+  sh.addColorStop(0,"rgba(0,0,0,.85)");sh.addColorStop(.45,"rgba(0,0,0,0)");
+  g.fillStyle=sh;g.fillRect(-w/2+x,y-h/2,w,h);g.restore();
+  g.beginPath();g.roundRect(-w/2+x,y-h/2,w,h,3);
+  g.strokeStyle=rgba(F.gold,.75);g.lineWidth=1.1;g.stroke();
+  txt(g,String(n),x-13,y+5.5,15,F.light,true,"center");
+  txt(g,"ALERTES",x+17,y+3.5,6.5,F.gold,false,"center",.18);
+}
+
+/* Réveil marker on the chapter ring. */
+function alarmPip(g,F,angle){
+  g.save();g.rotate(angle*RAD);
+  poly(g,[0,-232,-4.6,-242,4.6,-242],GARNET,"rgba(0,0,0,.5)",.6);
+  g.restore();
+}
+
+/* ---------------- hands ---------------- */
+function hand(g,F,angle,len,w){
+  g.save();g.rotate(angle*RAD);
+  const p=[-w,16,-w*.92,-len+30,0,-len,w*.92,-len+30,w,16];
+  g.save();g.shadowColor="rgba(0,0,0,.62)";g.shadowBlur=5;g.shadowOffsetX=3;g.shadowOffsetY=4;
+  poly(g,p,F.gold,null,0);g.restore();
+  poly(g,[0,13,0,-len+4,-w*.86,-len+30,-w*.9,15],F.light,null,0);
+  poly(g,[0,13,0,-len+4,w*.86,-len+30,w*.9,15],mix(F.gold,"#000000",.30),null,0);
+  poly(g,p,null,"rgba(0,0,0,.55)",.8);
+  line(g,0,10,0,-len+6,"rgba(255,255,255,.30)",.6);
+  g.restore();
+}
+function secondsHand(g,F,s){
+  g.save();g.rotate(s*6*RAD);
+  poly(g,[-1.7,38,-.45,-208,0,-223,.45,-208,1.7,38],F.gold,"rgba(0,0,0,.45)",.45);
+  ring(g,0,29,7,F.gold,2.2); circle(g,0,29,4.4,rgba(F.gold,.28));
+  g.restore();
+}
+function crystal(g){
+  g.save();g.beginPath();g.arc(0,0,270,0,TAU);g.clip();
+  const gl=g.createLinearGradient(-250,-270,130,250);
+  gl.addColorStop(0,"rgba(255,255,255,0)");gl.addColorStop(.30,"rgba(255,255,255,.022)");
+  gl.addColorStop(.40,"rgba(226,240,255,.075)");gl.addColorStop(.47,"rgba(255,255,255,.018)");
+  gl.addColorStop(.62,"rgba(255,255,255,0)");
+  g.fillStyle=gl;g.fillRect(-270,-270,540,540);
+  g.beginPath();g.arc(0,0,262,Math.PI*1.06,Math.PI*1.52);
+  g.strokeStyle="rgba(255,255,255,.14)";g.lineWidth=7;g.stroke();
+  g.restore();
+}
+
+/* ---------------- the card ---------------- */
+const SENDERS=["Messages","Calendar","Mail"];
+function cardRows(d){
+  const rows=[];
+  if(state.on.event) rows.push(["NEXT","09:30","Design review · Studio"]);
+  if(state.on.media) rows.push(["PLAYING","","Köln Concert, Part I · Jarrett"]);
+  if(state.on.alerts && state.alerts>0 && !state.ambient){
+    const v = state.privacy==="count" ? String(state.alerts)+" waiting"
+            : state.privacy==="senders" ? SENDERS.slice(0,3).join(" · ")
+            : "Ana: are we still on for 6?";
+    rows.push(["ALERTES",String(state.alerts),v]);
+  }
+  if(state.on.alarm) rows.push(["RÉVEIL","06:45",""]);
+  return rows.slice(0,4);
+}
+function drawCard(g,F,d,rows){
+  const date=d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}).toUpperCase();
+  txt(g,date,0,330,13,F.gold,false,"center",.22);
+  if(rows.length){
+    line(g,-150,350,-14,350,rgba(F.gold,.28),.8);
+    line(g, 14,350, 150,350,rgba(F.gold,.28),.8);
+    poly(g,[0,345,5,350,0,355,-5,350],rgba(F.gold,.55),null,0);
+  }
+  let y=380;
+  for(const [label,val,text] of rows){
+    txt(g,label,-12,y,8.5,rgba(F.gold,.85),false,"right",.20);
+    const v = val && text ? val+"   "+text : (val||text);
+    txt(g,v,12,y,12.5,"#C6CED6",true,"left");
+    y+=27;
+  }
+  txt(g,Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g," ").toUpperCase(),
+      0,y+8,9,"#6C7883",false,"center",.16);
+}
+
+
+
+/* ---- the lock screen furniture ---- */
+const NOTIFS=[
+  ["#4285F4","Messages","Ana &middot; are we still on for 6?"],
+  ["#34A853","Calendar","Design review &middot; 09:30, Studio"],
+  ["#EA4335","Mail","3 new in Archive"],
+  ["#FBBC04","Clock","Alarm set for 06:45"]
+];
+function furniture(clockHTML){
+  const n=NOTIFS.slice(0,ui.notifs).map(x=>
+    '<div class="nf"><div class="av" style="background:'+x[0]+'"></div>'+
+    '<div class="tx"><div class="tt">'+x[1]+'</div><div class="bd">'+x[2]+'</div></div></div>').join("");
+  return '<div class="statusbar"><span>Turk Telekom</span>'+
+    '<span class="ic"><span>&#9724;</span><span>&#9679;</span><span>100</span></span></div>'+
+    '<div class="clockzone">'+clockHTML+
+      '<div class="smartspace"><span>Mon, Sep 14</span><span class="dot">&middot;</span>'+
+      '<span>18&deg; Clear</span><span class="dot">&middot;</span><span>06:45</span></div>'+
+    '</div>'+
+    '<div class="notifs">'+n+'</div>'+
+    '<div class="bottom"><div class="shortcut">&#9788;</div>'+
+      '<div class="unlock"><div class="fp"></div><div class="charged">Charged</div></div>'+
+      '<div class="shortcut">&#9673;</div></div>';
+}
+const phoneA=document.getElementById("phoneA"), phoneB=document.getElementById("phoneB");
+function layout(){
+  const d=new Date();
+  const hh=String(d.getHours()).padStart(2,"0"), mm=String(d.getMinutes()).padStart(2,"0");
+  phoneA.innerHTML=furniture('<div class="bigclock">'+hh+'<br>'+mm+'</div>');
+  phoneB.innerHTML=furniture('<div class="dialwrap" style="--dialw:'+ui.size+'cqw"><canvas id="dialcv"></canvas></div>');
+  phoneA.classList.toggle("aod",state.ambient);
+  phoneB.classList.toggle("aod",state.ambient);
+}
+
+/* ---- the dial: the same routines SystemUI would run ---- */
+const sc=document.createElement("canvas"), scg=sc.getContext("2d");
+let staticKey="";
+function paintDial(){
+  const cv=document.getElementById("dialcv"); if(!cv) return;
+  const r=cv.getBoundingClientRect(); if(!r.width) return;
+  const w=Math.max(1,Math.round(r.width*RES));
+  if(cv.width!==w){ cv.width=cv.height=w; staticKey=""; }
+  const g=cv.getContext("2d"), k=r.width/600, F=FINISHES[state.finish];
+  g.setTransform(RES,0,0,RES,0,0); g.clearRect(0,0,r.width,r.width);
+  g.save(); g.translate(r.width/2,r.width/2); g.scale(k,k);
+  g.textBaseline="alphabetic"; g.lineCap="butt"; g.lineJoin="miter";
+  const sig=[state.finish,k.toFixed(4),RES].join("|");
+  if(staticKey!==sig){
+    const px=Math.max(1,Math.ceil(600*k*RES));
+    sc.width=sc.height=px;
+    scg.setTransform(k*RES,0,0,k*RES,px/2,px/2);
+    scg.clearRect(-300,-300,600,600);
+    scg.textBaseline="alphabetic"; scg.lineCap="butt"; scg.lineJoin="miter";
+    drawStatic(scg,F);
+    staticKey=sig;
+  }
+  g.drawImage(sc,-300,-300,600,600);
+  const d=new Date(), dim=state.ambient;
+  weatherCounter(g,F,-112,8,state.temp);
+  pointerCounter(g,F,112,8,"DATE",DATES,(d.getDate()-1)/31*360);
+  powerCounter(g,F,0,119,state.batt,state.charging);
+  if(ui.notifs>0 && !dim) guichet(g,F,0,-84,ui.notifs);
+  g.save(); g.rotate((6*30+45*.5)*RAD);
+  poly(g,[0,-232,-4.6,-242,4.6,-242],GARNET,"rgba(0,0,0,.5)",.6); g.restore();
+  const sec=d.getSeconds()+(dim?0:d.getMilliseconds()/1000);
+  hand(g,F,(d.getHours()%12+d.getMinutes()/60)*30,135,8);
+  hand(g,F,(d.getMinutes()+sec/60)*6,195,5);
+  if(!dim) secondsHand(g,F,sec);
+  circle(g,0,0,11,"#070C12"); circle(g,0,0,7,F.gold); circle(g,-1,-1,3,F.light);
+  crystal(g);
+  g.restore();
+}
+
+function seg(id,apply){
+  const box=document.getElementById(id);
+  box.addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    Array.from(box.children).forEach(c=>c.setAttribute("aria-pressed",String(c===b)));
+    apply(b.dataset.v!==undefined?+b.dataset.v:+b.dataset.i);
+  });
+}
+seg("gold",v=>{state.finish=v;staticKey="";});
+seg("size",v=>{ui.size=v;layout();staticKey="";});
+seg("notifs",v=>{ui.notifs=v;layout();});
+document.getElementById("aod").addEventListener("change",e=>{
+  state.ambient=e.target.checked;
+  phoneA.classList.toggle("aod",state.ambient);
+  phoneB.classList.toggle("aod",state.ambient);
+});
+
+layout();
+let last=0;
+function frame(now){
+  if(now-last>(state.ambient?1000:33)){ last=now; paintDial(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+setInterval(layout,30000);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{staticKey="";});
+</script>

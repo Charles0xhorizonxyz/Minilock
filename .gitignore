@@ -1,0 +1,14 @@
+.gradle/
+**/build/
+local.properties
+.idea/
+*.iml
+
+# signing material must never reach a public repo
+*.jks
+*.keystore
+*.pem
+*.pk8
+*.p12
+keys/
+secrets/
