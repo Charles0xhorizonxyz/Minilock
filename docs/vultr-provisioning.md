@@ -62,9 +62,54 @@ Then sync the GrapheneOS tree per <https://grapheneos.org/build>, targeting `pan
 
 Expect roughly **150 GB** of source and a similar amount of build output. Sync takes longer than most people expect — snapshot the instance once the sync completes, before building, so a future session skips it.
 
+## How long we actually need it
+
+On the chosen shape — `voc-c-32c-64gb-1000s`, 32 vCPU / 64 GB / 1000 GB NVMe at $0.986/hr:
+
+| Phase | Time |
+|---|---|
+| Bootstrap: deps, `repo`, ccache, swapfile | ~15 min |
+| `repo sync` of GrapheneOS (~150 GB) | **1.5–3 h** — by far the most variable |
+| First clean build | 1.5–2.5 h |
+| Generate keys, sign, build factory images | 30–45 min |
+| Apply the keyguard patch, incremental rebuilds | 30–60 min |
+| Download output | ~10 min |
+| **First session, total** | **5–8 hours ≈ $5–8** |
+
+Snapshot once the sync finishes. A later session restores it and skips straight to building: roughly **1.5 hours ≈ $1.50** per iteration after that.
+
+### Two technical notes for this shape
+
+- **64 GB with 32 cores is the standard ratio but the link steps spike.** Add a swapfile before building, and leave a couple of cores spare:
+
+  ```bash
+  fallocate -l 32G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  # then build with -j28 rather than -j32
+  ```
+
+- 1000 GB is comfortable: ~150 GB source, ~250 GB `out/`, ~100 GB ccache.
+
+## Billing: what actually stops, and what doesn't
+
+Vultr bills **hourly, capped at the monthly figure**. The $720/mo on the summary is only what you'd pay leaving it up for a whole month; eight hours is about $7.89.
+
+**Powering the instance off does not stop billing. Only destroying it does.** This is the mistake that costs people real money.
+
+Things that keep billing after the server is gone, unless you delete them too:
+
+| Item | Watch for |
+|---|---|
+| **Snapshots** | Billed per GB per month and they survive instance destruction. A snapshot of a synced tree is large. Keep it only if another build is coming; delete it otherwise. |
+| **Automatic Backups** | $144/mo on this plan. Leave **disabled** — the box is disposable. |
+| **DDoS Protection** | $10/mo. Leave off. |
+| **Reserved IP** | Bills on its own once reserved. Don't reserve one. |
+| **Block Storage** | Not used here by design. Confirm none was created. |
+
+Bandwidth is a non-issue: 10 TB included, and we pull ~150 GB in (inbound is typically free) and push ~2 GB out.
+
 ## Before destroying
 
 1. Download the signed build output.
 2. Download the **signing keys** and back them up properly. Losing them means the phone must be wiped to update it again. They must never be committed — `.gitignore` already excludes `keys/`, `*.pem`, `*.pk8`, `*.jks`.
-3. Snapshot the instance if another build is likely.
-4. Destroy the instance *and* confirm no Block Storage or reserved IP is left billing.
+3. Snapshot the instance only if another build is likely — it bills per GB per month.
+4. **Destroy** the instance (not stop it), then check Billing → Usage and confirm nothing is still accruing.
