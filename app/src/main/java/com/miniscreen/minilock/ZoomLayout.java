@@ -6,6 +6,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewParent;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
 
@@ -101,7 +102,27 @@ public class ZoomLayout extends FrameLayout {
         canvas.restore();
     }
 
+    private void holdGesture(boolean hold) {
+        ViewParent parent = getParent();
+        if (parent != null) parent.requestDisallowInterceptTouchEvent(hold);
+    }
+
     @Override public boolean dispatchTouchEvent(MotionEvent event) {
+        // The ScrollView is our parent now, and it will claim a pinch as a scroll the moment
+        // one finger drifts vertically -- we would then get a CANCEL and the zoom would never
+        // happen. Take the gesture as soon as a second finger lands.
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_POINTER_DOWN:
+                holdGesture(true);
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                holdGesture(false);
+                break;
+            default:
+                break;
+        }
+
         detector.onTouchEvent(event);
 
         if (event.getPointerCount() >= 2) return true;   // two fingers belong to the zoom
@@ -120,6 +141,7 @@ public class ZoomLayout extends FrameLayout {
                         if (dx > slop || dy > slop) oneFinger = dx > dy ? 1 : 2;
                     }
                     if (oneFinger == 1) {                // sideways: the ScrollView cannot do this
+                        holdGesture(true);               // and it must not steal this either
                         panX += event.getX() - lastX;
                         lastX = event.getX();
                         clampPan();
