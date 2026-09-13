@@ -39,11 +39,12 @@ public class MainActivity extends Activity {
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(24), dp(18), dp(24), dp(24));
-        scroll.addView(content);
+        // ScrollView on the OUTSIDE, zoom inside it: the other way round, scaling put the
+        // bottom of the content out of reach and divided every scroll by the zoom factor.
         zoom = new ZoomLayout(this);
-        zoom.setBackgroundColor(ink);
-        zoom.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
-        setContentView(zoom);
+        zoom.addView(content, new FrameLayout.LayoutParams(-1, -2));
+        scroll.addView(zoom);
+        setContentView(scroll);
         scroll.setOnApplyWindowInsetsListener((v, insets) -> {
             if (android.os.Build.VERSION.SDK_INT >= 30) {
                 android.graphics.Insets bars =

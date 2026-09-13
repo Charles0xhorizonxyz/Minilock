@@ -23,6 +23,7 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.16-debug.apk` | 0.0.16 | 2026-09-14 02:35 | 247,568 B | `34c827fe82a0a223` | Disabled ScaleGestureDetector quick-scale, which is on by default and let a one-finger double-tap-drag zoom by accident. |
 | `Minilock-v0.0.17-debug.apk` | 0.0.17 | 2026-09-14 02:42 | 249,152 B | `0d7395b05f85c28c` | Real battery on the reserve counter (BatteryBridge, no permission). Two-finger drag positions the watch vertically. Lateral phone motion drives the bow spring so the watch rocks and settles. One-finger horizontal drag pans the zoomed app. Bigger framing margin. |
 | `Minilock-v0.0.18-debug.apk` | 0.0.18 | 2026-09-14 02:44 | 249,752 B | `4cf2adb4f8c81868` | **Battery actually shows**: the sticky broadcast arrives at registration, before the page has loaded, so the first value went into a page with no __lock and was lost. The host now re-pushes on page ready. |
+| `Minilock-v0.0.19-debug.apk` | 0.0.19 | 2026-09-14 02:50 | 249,748 B | `64e6f721d3de4943` | **Zoom nesting inverted**: ZoomLayout now sits inside the ScrollView rather than around it, so the whole content stays reachable and scrolling runs at normal speed. Draws by scaling the canvas, so text re-renders sharp instead of being a magnified bitmap. |
 
 ## Conventions
 
