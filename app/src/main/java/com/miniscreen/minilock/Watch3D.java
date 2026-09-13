@@ -12,6 +12,7 @@ import android.view.WindowInsetsController;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.ValueCallback;
 
 /**
  * The 3D pocket watch: the WebGL scene from tools/watch3d.html, running unchanged in a WebView
@@ -43,11 +44,34 @@ final class Watch3D {
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView v, String url) {
                 applyCard(v);
+                restorePlacement(v);
                 if (onReady != null) onReady.run();      // state pushed before this was lost
             }
         });
         web.loadUrl("file:///android_asset/lock.html");
         return web;
+    }
+
+    /** Put the watch back where it was left. */
+    static void restorePlacement(WebView web) {
+        String saved = Prefs.placement(web.getContext());
+        if (saved.isEmpty()) return;
+        String[] parts = saved.split(",");
+        if (parts.length != 3) return;
+        web.evaluateJavascript("window.__lock&&__lock.setPlacement("
+                + parts[0] + "," + parts[1] + "," + parts[2] + ")", null);
+    }
+
+    /** Remember where it was parked, once the gesture ends. */
+    static void savePlacement(final WebView web) {
+        web.evaluateJavascript("window.__lock?__lock.placement():''", new ValueCallback<String>() {
+            @Override public void onReceiveValue(String value) {
+                if (value == null) return;
+                String v = value.replace("\"", "").trim();   // comes back JSON-quoted
+                if (v.isEmpty() || v.equals("null") || v.split(",").length != 3) return;
+                Prefs.setPlacement(web.getContext(), v);
+            }
+        });
     }
 
     /** Show or hide the line of text under the watch, following the user's setting. */
@@ -77,7 +101,7 @@ final class Watch3D {
                         return true;
                     }
                 });
-        final float[] lastFocusY = {0f};
+        final float[] lastFocusX = {0f}, lastFocusY = {0f};
         final boolean[] panning = {false};
         web.setOnTouchListener((v, e) -> {
             // Only claim the gesture once a second finger is down, so a one-finger drag can
@@ -85,16 +109,20 @@ final class Watch3D {
             if (e.getPointerCount() > 1) {
                 ViewParent parent = v.getParent();
                 if (parent != null) parent.requestDisallowInterceptTouchEvent(true);
+                float fx = (e.getX(0) + e.getX(1)) / 2f;
                 float fy = (e.getY(0) + e.getY(1)) / 2f;
                 if (e.getActionMasked() == MotionEvent.ACTION_MOVE && panning[0]) {
-                    float dy = fy - lastFocusY[0];
-                    if (Math.abs(dy) > 0.5f) {
-                        web.evaluateJavascript("window.__lock&&__lock.nudge(" + dy + ")", null);
+                    float dx = fx - lastFocusX[0], dy = fy - lastFocusY[0];
+                    if (Math.abs(dx) > 0.5f || Math.abs(dy) > 0.5f) {
+                        web.evaluateJavascript(
+                                "window.__lock&&__lock.nudge(" + dx + "," + dy + ")", null);
                     }
                 }
+                lastFocusX[0] = fx;
                 lastFocusY[0] = fy;
                 panning[0] = true;
             } else {
+                if (panning[0]) savePlacement(web);       // gesture over: remember the placement
                 panning[0] = false;
             }
             detector.onTouchEvent(e);

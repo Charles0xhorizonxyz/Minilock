@@ -77,7 +77,7 @@ requestAnimationFrame(loop);
 // measure it: it reserves its real share of the viewport, and the watch is fitted into, and
 // centred in, whatever is left. On a tall phone the fit stays width-limited so nothing shrinks.
 const NEED_W=2.62, NEED_H=4.15;     // includes a margin: tilting swings the silhouette about
-let camFit=9.2, zoom=1, cardOn=true, cardFrac=0, userY=0;
+let camFit=9.2, zoom=1, cardOn=true, cardFrac=0, userX=0, userY=0;
 function fitCamera(aspect){
   const t=Math.tan(camera.fov*Math.PI/360);
   const card=document.querySelector(".cardwrap");
@@ -91,12 +91,15 @@ function fitCamera(aspect){
 /* ---- gyroscope: the phone moves, the watch and the room do not ---- */
 let tiltX=0, tiltY=0, wantX=0, wantY=0;
 window.__lock={
-  setTilt(px,py){                     // radians, already relative to the baseline
-    const nx=Math.max(-0.42,Math.min(0.42,px));
-    const ny=Math.max(-0.58,Math.min(0.58,py));
+  setTilt(px,py){
+    // Unclamped: py accumulates continuously, so turning the phone right round walks the
+    // camera a full 360 degrees and you see the caseback. Only pitch is limited, and only to
+    // stop it tipping over the pole where the up vector flips.
+    const nx=Math.max(-1.30,Math.min(1.30,px));
+    const ny=py;
     // lateral movement drives the bow spring the flip physics already runs, so the watch
     // rocks and settles like something with mass hanging from its ring
-    vphi += -(ny-wantY)*2.6;
+    vphi += -Math.max(-0.5,Math.min(0.5,(ny-wantY)))*2.6;
     wantX=nx; wantY=ny;
   },
   setCard(on){                        // the line of text under the watch is a user setting
@@ -109,11 +112,14 @@ window.__lock={
     zoom=Math.max(0.42,Math.min(2.4,z));
     dragging=false;                   // a pinch must not also spin the watch
   },
-  nudge(dyPixels){                    // two-finger drag positions the watch vertically
+  nudge(dxPixels,dyPixels){           // two-finger drag places the watch anywhere
     const t=Math.tan(camera.fov*Math.PI/360), d=camFit*zoom;
     const worldPerPx=(2*d*t)/(window.innerHeight||1);
-    userY=Math.max(-3,Math.min(3,userY+dyPixels*worldPerPx));
+    userX=Math.max(-6,Math.min(6,userX-dxPixels*worldPerPx));
+    userY=Math.max(-6,Math.min(6,userY+dyPixels*worldPerPx));
   },
+  placement(){ return zoom+","+userX+","+userY; },
+  setPlacement(z,x,y){ zoom=z; userX=x; userY=y; },
   setBattery(pct,charging){           // the real charge, from BatteryManager
     state.batt=Math.max(0,Math.min(100,Math.round(pct)));
     state.charging=!!charging;
@@ -124,20 +130,21 @@ function applyCamera(){
   // Orbit the CAMERA rather than rotating the scene: the watch and the studio stay fixed in
   // world space, so tilting sweeps the environment map across the gold the way it would across
   // real metal. Rotating the scene would carry the lights along and kill the effect.
-  tiltX+=(wantX-tiltX)*0.12;          // damped enough to feel like glass rather than jelly
-  tiltY+=(wantY-tiltY)*0.12;
+  tiltX+=(wantX-tiltX)*0.16;          // damped enough to feel like glass rather than jelly
+  tiltY+=(wantY-tiltY)*0.16;
   const d=camFit*zoom;
   // The offset that makes room for the card must be derived from the CURRENT distance. Taking
   // it from the fitted distance meant zooming in kept a far-view offset and threw the watch
   // clean off the top of the frame.
   const t=Math.tan(camera.fov*Math.PI/360);
   const lookY=-0.15-(2*d*t)*cardFrac/2+userY;
+  // the watch is a fixed object; the camera walks around it
   camera.position.set(
-    Math.sin(tiltY)*Math.cos(tiltX)*d,
+    userX+Math.sin(tiltY)*Math.cos(tiltX)*d,
     lookY+Math.sin(tiltX)*d,
     Math.cos(tiltY)*Math.cos(tiltX)*d
   );
-  camera.lookAt(0,lookY,0);
+  camera.lookAt(userX,lookY,0);
 }
 const _rawLoop=loop;
 loop=function(now){ applyCamera(); _rawLoop(now); };

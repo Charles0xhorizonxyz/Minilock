@@ -10,4 +10,7 @@ final class Prefs {
     static boolean sweep(Context c) { return get(c).getBoolean("sweep", true); }
     static boolean lock(Context c) { return get(c).getBoolean("lock", false); }
     static boolean card(Context c) { return get(c).getBoolean("card", true); }
+    /** Where the user parked the watch: "zoom,x,y". */
+    static String placement(Context c) { return get(c).getString("place", ""); }
+    static void setPlacement(Context c, String v) { get(c).edit().putString("place", v).apply(); }
 }

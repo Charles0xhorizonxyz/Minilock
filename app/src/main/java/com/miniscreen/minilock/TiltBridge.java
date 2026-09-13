@@ -17,16 +17,16 @@ import android.webkit.WebView;
 final class TiltBridge implements SensorEventListener {
 
     /** Flip either if the tilt reads inverted on a given device. */
-    private static final float PITCH_SIGN = -1f, ROLL_SIGN = -1f;
+    private static final float PITCH_SIGN = -1f, YAW_SIGN = -1f;
     /** Radians of change before it is worth crossing into JavaScript. */
-    private static final float EPSILON = 0.004f;
+    private static final float EPSILON = 0.003f;
 
     private final SensorManager sensors;
     private final Sensor rotation;
     private final WebView web;
     private final float[] matrix = new float[9], orientation = new float[3];
     private boolean haveBaseline;
-    private float basePitch, baseRoll, sentPitch = 9f, sentRoll = 9f;
+    private float basePitch, previousYaw, turned, sentPitch = 9f, sentYaw = 9f;
 
     TiltBridge(Context context, WebView web) {
         this.web = web;
@@ -39,10 +39,11 @@ final class TiltBridge implements SensorEventListener {
         rotation = s;
     }
 
-    /** Whatever angle the phone is held at when this starts becomes level. */
+    /** Whatever way the phone is pointing when this starts becomes head-on. */
     void start() {
         haveBaseline = false;
-        sentPitch = sentRoll = 9f;
+        turned = 0f;
+        sentPitch = sentYaw = 9f;
         if (sensors != null && rotation != null) {
             sensors.registerListener(this, rotation, SensorManager.SENSOR_DELAY_GAME);
         }
@@ -57,14 +58,24 @@ final class TiltBridge implements SensorEventListener {
         if (web == null) return;
         SensorManager.getRotationMatrixFromVector(matrix, e.values);
         SensorManager.getOrientation(matrix, orientation);
-        float pitch = orientation[1], roll = orientation[2];
-        if (!haveBaseline) { basePitch = pitch; baseRoll = roll; haveBaseline = true; }
+        float yaw = orientation[0], pitch = orientation[1];
+        if (!haveBaseline) { basePitch = pitch; previousYaw = yaw; haveBaseline = true; }
+
+        // Unwrap: azimuth jumps between +pi and -pi, and a raw delta there would snap the
+        // camera right round. Accumulating the short way keeps the orbit continuous, so you
+        // can keep turning past 360 degrees and it never resets.
+        float step = yaw - previousYaw;
+        if (step > Math.PI) step -= 2f * (float) Math.PI;
+        if (step < -Math.PI) step += 2f * (float) Math.PI;
+        turned += step;
+        previousYaw = yaw;
+
         float dp = PITCH_SIGN * (pitch - basePitch);
-        float dr = ROLL_SIGN * (roll - baseRoll);
-        if (Math.abs(dp - sentPitch) < EPSILON && Math.abs(dr - sentRoll) < EPSILON) return;
+        float dy = YAW_SIGN * turned;
+        if (Math.abs(dp - sentPitch) < EPSILON && Math.abs(dy - sentYaw) < EPSILON) return;
         sentPitch = dp;
-        sentRoll = dr;
-        web.evaluateJavascript("window.__lock&&__lock.setTilt(" + dp + "," + dr + ")", null);
+        sentYaw = dy;
+        web.evaluateJavascript("window.__lock&&__lock.setTilt(" + dp + "," + dy + ")", null);
     }
 
     @Override public void onAccuracyChanged(Sensor sensor, int accuracy) { }

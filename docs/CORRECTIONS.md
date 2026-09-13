@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.18**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.21**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -75,7 +75,10 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 36 | Real battery level on a counter | **Done and verified** — dial reads 84%, phone reads 84% |
 | 37 | Lock screen watch zoomable, movable up/down | Done — pinch, plus two-finger drag to position. **Unverified**: adb cannot do multi-touch |
 | 38 | Gyroscope should give it weight, not just parallax | Done — lateral motion drives the bow spring, so it rocks and settles. **Unverified**: needs real movement |
-| 39 | Zoomed app cannot pan left/right | Done — one-finger horizontal drag pans when zoomed. **Unverified** |
+| 39 | Zoomed app cannot pan left/right | Done — v0.0.19 inverted the nesting; ScrollView outside, zoom inside |
+| 40 | Zoomed app could not reach the bottom, and scrolled slowly | Done — same nesting fix. Scrolling was being divided by the zoom factor |
+| 41 | Gyroscope only nudges and re-centres; wanted full 360 | Done — v0.0.20. Clamp and re-baseline removed, azimuth unwrapped and accumulated. **Unverified**: needs real movement |
+| 42 | Size and place the watch freely rather than auto-fit | Done — v0.0.20/21. Pinch sizes, two-finger drag places, and it is remembered. **Unverified** |
 
 ---
 
