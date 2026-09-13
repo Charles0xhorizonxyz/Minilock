@@ -10,6 +10,7 @@ import android.webkit.WebView;
 public class PreviewActivity extends Activity {
 
     private WebView web;
+    private TiltBridge tilt;
     private float downX, downY;
 
     @Override public void onCreate(Bundle state) {
@@ -19,11 +20,20 @@ public class PreviewActivity extends Activity {
         web.setContentDescription("Fullscreen 3D pocket watch. Swipe up to return.");
         setContentView(web);
         Watch3D.immersive(getWindow());     // after setContentView, or the decor view is null
+        tilt = new TiltBridge(this, web);
     }
 
-    @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); }
+    @Override protected void onResume() {
+        super.onResume();
+        if (web != null) web.onResume();
+        if (tilt != null) tilt.start();
+    }
 
-    @Override protected void onPause() { super.onPause(); if (web != null) web.onPause(); }
+    @Override protected void onPause() {
+        super.onPause();
+        if (tilt != null) tilt.stop();
+        if (web != null) web.onPause();
+    }
 
     @Override protected void onDestroy() {
         if (web != null) { web.destroy(); web = null; }
@@ -32,6 +42,7 @@ public class PreviewActivity extends Activity {
 
     /** Swipe up to leave; horizontal drags still turn the watch over. */
     @Override public boolean dispatchTouchEvent(MotionEvent e) {
+        if (e.getPointerCount() > 1) return super.dispatchTouchEvent(e);   // leave pinches alone
         if (e.getActionMasked() == MotionEvent.ACTION_DOWN) {
             downX = e.getX(); downY = e.getY();
         } else if (e.getActionMasked() == MotionEvent.ACTION_UP) {

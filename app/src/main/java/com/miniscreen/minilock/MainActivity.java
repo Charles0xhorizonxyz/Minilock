@@ -20,6 +20,7 @@ public class MainActivity extends Activity {
     private final int ink = 0xFF090C10, gold = 0xFFC9AA7C, muted = 0xFF88919C;
     private LinearLayout content;
     private WebView hero;
+    private TiltBridge tilt;
 
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + .5f);
@@ -61,6 +62,7 @@ public class MainActivity extends Activity {
                 / getResources().getDisplayMetrics().density);
         add(hero, Math.min(430, width + 40));
         hero.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
+        tilt = new TiltBridge(this, hero);
 
         TextView edition = text("EDITION 01", 10, gold);
         edition.setLetterSpacing(.15f);
@@ -170,6 +172,7 @@ public class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         if (hero != null) hero.onResume();
+        if (tilt != null) tilt.start();
         // only run the watcher while it is both wanted and permitted
         if (Prefs.lock(this) && Settings.canDrawOverlays(this)) LockService.start(this);
         else if (!Prefs.lock(this)) LockService.stop(this);
@@ -177,6 +180,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onPause() {
         super.onPause();
+        if (tilt != null) tilt.stop();
         if (hero != null) hero.onPause();   // no WebGL rendering behind other apps
     }
 
