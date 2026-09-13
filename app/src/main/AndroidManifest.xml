@@ -1,4 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The stand-in lock screen ends this app's zero-permission record.
+         SYSTEM_ALERT_WINDOW is what exempts it from the Android 10+ ban on starting an
+         activity from the background; the rest keep the watcher service alive. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <application android:label="Miniscreen · Atelier" android:theme="@style/AppTheme" android:icon="@drawable/ic_atelier" android:allowBackup="true" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
@@ -15,5 +24,18 @@
             <intent-filter><action android:name="android.service.wallpaper.WallpaperService" /></intent-filter>
             <meta-data android:name="android.service.wallpaper" android:resource="@xml/wallpaper" />
         </service>
+        <activity android:name=".LockScreenActivity" android:exported="false"
+            android:launchMode="singleInstance" android:excludeFromRecents="true"
+            android:showWhenLocked="true" android:turnScreenOn="true"
+            android:theme="@style/LockTheme" android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode|density" />
+        <service android:name=".LockService" android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Shows the replacement lock screen when the display wakes" />
+        </service>
+        <receiver android:name=".BootReceiver" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
+        </receiver>
     </application>
 </manifest>

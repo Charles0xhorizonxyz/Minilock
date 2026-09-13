@@ -8,4 +8,5 @@ final class Prefs {
     static int finish(Context c) { return get(c).getInt("finish", 0); }
     static boolean ambient(Context c) { return get(c).getBoolean("ambient", true); }
     static boolean sweep(Context c) { return get(c).getBoolean("sweep", true); }
+    static boolean lock(Context c) { return get(c).getBoolean("lock", false); }
 }

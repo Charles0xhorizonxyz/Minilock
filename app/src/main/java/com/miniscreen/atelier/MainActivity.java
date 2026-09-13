@@ -45,6 +45,17 @@ public class MainActivity extends Activity {
         add(choices,48); updateFinishes();
         toggle("Ambient mode","Dimmed dial · seconds hidden · gentle drift", "ambient",Prefs.ambient(this));
         toggle("Sweeping seconds","A fluid, mechanical rhythm", "sweep",Prefs.sweep(this));
+        toggle("Stand-in lock screen","The 3D watch when the screen wakes", "lock",Prefs.lock(this));
+        TextView overlay=text("Allow display over other apps   \u2197",12,gold);
+        overlay.setPadding(0,dp(14),0,0);
+        overlay.setOnClickListener(v->startActivity(new Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            android.net.Uri.parse("package:"+getPackageName()))));
+        add(overlay,-2);
+        TextView caution=text("Requires your real screen lock set to None. The phone is then not "+
+            "actually locked \u2014 Home escapes this, and no app can stop that. A stopgap until the "+
+            "custom build.",11,0xFFC98A8A);
+        caution.setLineSpacing(dp(3),1); caution.setPadding(0,dp(8),0,0); add(caution,-2);
         TextView preview=text("Preview screensaver   ↗",14,ink); preview.setGravity(Gravity.CENTER); preview.setBackground(background(gold,gold)); margin(preview,20,0); preview.getLayoutParams().height=dp(52); preview.setOnClickListener(v->startActivity(new Intent(this,PreviewActivity.class)));
         TextView activate=text("Set as Android screensaver",13,gold); activate.setGravity(Gravity.CENTER); add(activate,52);
         activate.setOnClickListener(v->{
@@ -70,5 +81,11 @@ public class MainActivity extends Activity {
     private GradientDrawable background(int color,int stroke) { GradientDrawable bg=new GradientDrawable(); bg.setColor(color); bg.setCornerRadius(dp(9)); bg.setStroke(dp(1),stroke); return bg; }
     private void add(View v,int height) { content.addView(v,new LinearLayout.LayoutParams(-1,height<0?height:dp(height))); }
     private void margin(View v,int top,int bottom) { LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2); lp.topMargin=dp(top); lp.bottomMargin=dp(bottom); content.addView(v,lp); }
-    @Override protected void onResume() { super.onResume(); if(watch!=null)watch.invalidate(); }
+    @Override protected void onResume() {
+        super.onResume();
+        if(watch!=null)watch.invalidate();
+        // only run the watcher while it is both wanted and permitted
+        if(Prefs.lock(this) && Settings.canDrawOverlays(this)) LockService.start(this);
+        else if(!Prefs.lock(this)) LockService.stop(this);
+    }
 }

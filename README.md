@@ -66,6 +66,10 @@ Android has never exposed a way to replace the lock screen. The keyguard belongs
 
 The plan is to build GrapheneOS with one small patch: the dial as a `ClockProviderPlugin`, plus the SystemUI change that lets plugins signed with our own key load on a user build. The dial then fills the clock slot AOSP already reserves — no second clock, nothing overlapping. After that initial build the dial ships as an ordinary APK, so iterating on it needs no reflash.
 
+## Third-party
+
+`app/src/main/assets/three.min.js` is [three.js](https://threejs.org) r155, MIT licensed, bundled rather than fetched because the app holds no `INTERNET` permission.
+
 ## Licence
 
 Not yet chosen.
