@@ -21,6 +21,8 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.14-debug.apk` | 0.0.14 | 2026-09-14 02:26 | 245,744 B | `10519d8d556842ae` | **Pinch zoom actually works**: read natively with ScaleGestureDetector instead of the page touch handlers, which a ScrollView claimed as a scroll before the page saw them. |
 | `Minilock-v0.0.15-debug.apk` | 0.0.15 | 2026-09-14 02:34 | 247,540 B | `aa077647a43a88ec` | Whole app screen wrapped in a ZoomLayout: two fingers scale and pan everything, one finger passes through. Page double-tap zoom removed so it cannot fight it. |
 | `Minilock-v0.0.16-debug.apk` | 0.0.16 | 2026-09-14 02:35 | 247,568 B | `34c827fe82a0a223` | Disabled ScaleGestureDetector quick-scale, which is on by default and let a one-finger double-tap-drag zoom by accident. |
+| `Minilock-v0.0.17-debug.apk` | 0.0.17 | 2026-09-14 02:42 | 249,152 B | `0d7395b05f85c28c` | Real battery on the reserve counter (BatteryBridge, no permission). Two-finger drag positions the watch vertically. Lateral phone motion drives the bow spring so the watch rocks and settles. One-finger horizontal drag pans the zoomed app. Bigger framing margin. |
+| `Minilock-v0.0.18-debug.apk` | 0.0.18 | 2026-09-14 02:44 | 249,752 B | `4cf2adb4f8c81868` | **Battery actually shows**: the sticky broadcast arrives at registration, before the page has loaded, so the first value went into a page with no __lock and was lost. The host now re-pushes on page ready. |
 
 ## Conventions
 

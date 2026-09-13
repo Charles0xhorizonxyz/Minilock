@@ -17,6 +17,7 @@ public class LockScreenActivity extends Activity {
 
     private WebView web;
     private TiltBridge tilt;
+    private BatteryBridge battery;
     private float downX, downY;
     private long downAt;
 
@@ -30,22 +31,25 @@ public class LockScreenActivity extends Activity {
                     | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
         }
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        web = Watch3D.view(this);
+        web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); });
         setContentView(web);
         Watch3D.immersive(getWindow());   // after setContentView, or getInsetsController() is null
         tilt = new TiltBridge(this, web);
         Watch3D.enablePinch(web);
+        battery = new BatteryBridge(this, web);
     }
 
     @Override protected void onResume() {
         super.onResume();
         if (web != null) web.onResume();
         if (tilt != null) tilt.start();
+        if (battery != null) battery.start();
     }
 
     @Override protected void onPause() {
         super.onPause();
         if (tilt != null) tilt.stop();
+        if (battery != null) battery.stop();
         if (web != null) web.onPause();
     }
 

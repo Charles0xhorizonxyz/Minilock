@@ -22,6 +22,7 @@ public class MainActivity extends Activity {
     private LinearLayout content;
     private WebView hero;
     private ZoomLayout zoom;
+    private BatteryBridge battery;
     private TiltBridge tilt;
 
     private int dp(float value) {
@@ -69,12 +70,13 @@ public class MainActivity extends Activity {
         add(subtitle, 26);
 
         // The watch itself, in 3D. Tilt the phone and the light moves across the gold.
-        hero = Watch3D.view(this);
+        hero = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); });
         int width = (int) (getResources().getDisplayMetrics().widthPixels
                 / getResources().getDisplayMetrics().density);
         add(hero, Math.min(560, (int) (width * 1.45f)));   // tall enough for the dial to be legible
         hero.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
         tilt = new TiltBridge(this, hero);
+        battery = new BatteryBridge(this, hero);
 
         TextView edition = text("EDITION 01", 11, gold);
         edition.setLetterSpacing(.15f);
@@ -194,6 +196,7 @@ public class MainActivity extends Activity {
         super.onResume();
         if (hero != null) hero.onResume();
         if (tilt != null) tilt.start();
+        if (battery != null) battery.start();
         // only run the watcher while it is both wanted and permitted
         if (Prefs.lock(this) && Settings.canDrawOverlays(this)) LockService.start(this);
         else if (!Prefs.lock(this)) LockService.stop(this);
@@ -202,6 +205,7 @@ public class MainActivity extends Activity {
     @Override protected void onPause() {
         super.onPause();
         if (tilt != null) tilt.stop();
+        if (battery != null) battery.stop();
         if (hero != null) hero.onPause();   // no WebGL rendering behind other apps
     }
 

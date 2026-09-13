@@ -76,8 +76,8 @@ requestAnimationFrame(loop);
 // 1.79 up to the top of the bow and 0.85 down. Rather than guess a constant for the card, we
 // measure it: it reserves its real share of the viewport, and the watch is fitted into, and
 // centred in, whatever is left. On a tall phone the fit stays width-limited so nothing shrinks.
-const NEED_W=2.30, NEED_H=3.70;
-let camFit=9.2, zoom=1, cardOn=true, cardFrac=0;
+const NEED_W=2.62, NEED_H=4.15;     // includes a margin: tilting swings the silhouette about
+let camFit=9.2, zoom=1, cardOn=true, cardFrac=0, userY=0;
 function fitCamera(aspect){
   const t=Math.tan(camera.fov*Math.PI/360);
   const card=document.querySelector(".cardwrap");
@@ -92,8 +92,12 @@ function fitCamera(aspect){
 let tiltX=0, tiltY=0, wantX=0, wantY=0;
 window.__lock={
   setTilt(px,py){                     // radians, already relative to the baseline
-    wantX=Math.max(-0.42,Math.min(0.42,px));
-    wantY=Math.max(-0.58,Math.min(0.58,py));
+    const nx=Math.max(-0.42,Math.min(0.42,px));
+    const ny=Math.max(-0.58,Math.min(0.58,py));
+    // lateral movement drives the bow spring the flip physics already runs, so the watch
+    // rocks and settles like something with mass hanging from its ring
+    vphi += -(ny-wantY)*2.6;
+    wantX=nx; wantY=ny;
   },
   setCard(on){                        // the line of text under the watch is a user setting
     const card=document.querySelector(".cardwrap");
@@ -104,6 +108,15 @@ window.__lock={
   setZoom(z){                         // driven natively by ScaleGestureDetector
     zoom=Math.max(0.42,Math.min(2.4,z));
     dragging=false;                   // a pinch must not also spin the watch
+  },
+  nudge(dyPixels){                    // two-finger drag positions the watch vertically
+    const t=Math.tan(camera.fov*Math.PI/360), d=camFit*zoom;
+    const worldPerPx=(2*d*t)/(window.innerHeight||1);
+    userY=Math.max(-3,Math.min(3,userY+dyPixels*worldPerPx));
+  },
+  setBattery(pct,charging){           // the real charge, from BatteryManager
+    state.batt=Math.max(0,Math.min(100,Math.round(pct)));
+    state.charging=!!charging;
   },
   recentre(){ wantX=wantY=0; }
 };
@@ -118,7 +131,7 @@ function applyCamera(){
   // it from the fitted distance meant zooming in kept a far-view offset and threw the watch
   // clean off the top of the frame.
   const t=Math.tan(camera.fov*Math.PI/360);
-  const lookY=-0.15-(2*d*t)*cardFrac/2;
+  const lookY=-0.15-(2*d*t)*cardFrac/2+userY;
   camera.position.set(
     Math.sin(tiltY)*Math.cos(tiltX)*d,
     lookY+Math.sin(tiltX)*d,

@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.16**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.18**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -72,6 +72,10 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 33 | Make the app zoomable | Done — v0.0.14 |
 | 34 | Remove the scrollbar | Done — v0.0.12 |
 | 35 | "I see v11 but nothing changed" | Done — version now shown in the masthead |
+| 36 | Real battery level on a counter | **Done and verified** — dial reads 84%, phone reads 84% |
+| 37 | Lock screen watch zoomable, movable up/down | Done — pinch, plus two-finger drag to position. **Unverified**: adb cannot do multi-touch |
+| 38 | Gyroscope should give it weight, not just parallax | Done — lateral motion drives the bow spring, so it rocks and settles. **Unverified**: needs real movement |
+| 39 | Zoomed app cannot pan left/right | Done — one-finger horizontal drag pans when zoomed. **Unverified** |
 
 ---
 

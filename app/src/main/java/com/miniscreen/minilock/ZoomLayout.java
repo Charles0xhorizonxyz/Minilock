@@ -23,6 +23,9 @@ public class ZoomLayout extends FrameLayout {
     private float scale = 1f, panX = 0f, panY = 0f;
     private float lastFocusX, lastFocusY;
     private boolean gesture;
+    private float downX, downY, lastX;
+    private int oneFinger;                 // 0 undecided, 1 panning sideways, 2 passed on
+    private final int slop;
 
     public ZoomLayout(Context context) {
         super(context);
@@ -48,6 +51,7 @@ public class ZoomLayout extends FrameLayout {
         // which fires by accident and makes single taps feel haunted. Zoom is two fingers only.
         detector.setQuickScaleEnabled(false);
         detector.setStylusScaleEnabled(false);
+        slop = android.view.ViewConfiguration.get(context).getScaledTouchSlop();
     }
 
     private static float clamp(float v, float lo, float hi) {
@@ -88,6 +92,36 @@ public class ZoomLayout extends FrameLayout {
         gesture = false;
 
         if (scale == 1f && panX == 0f && panY == 0f) return super.dispatchTouchEvent(event);
+
+        // Zoomed in, one finger: sideways drags pan, because the content is now wider than the
+        // screen and nothing else can reach it. Up and down still belongs to the scroll view.
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                downX = lastX = event.getX();
+                downY = event.getY();
+                oneFinger = 0;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (oneFinger == 0) {
+                    float dx = Math.abs(event.getX() - downX), dy = Math.abs(event.getY() - downY);
+                    if (dx > slop || dy > slop) oneFinger = dx > dy ? 1 : 2;
+                }
+                if (oneFinger == 1) {
+                    panX += event.getX() - lastX;
+                    lastX = event.getX();
+                    apply();
+                    return true;
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                boolean consumed = oneFinger == 1;
+                oneFinger = 0;
+                if (consumed) return true;
+                break;
+            default:
+                break;
+        }
 
         // map the touch back into the child's untransformed coordinates
         inverse.reset();

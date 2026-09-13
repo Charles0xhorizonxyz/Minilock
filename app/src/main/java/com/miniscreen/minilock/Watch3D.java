@@ -24,7 +24,7 @@ final class Watch3D {
 
     private Watch3D() { }
 
-    static WebView view(Context context) {
+    static WebView view(Context context, Runnable onReady) {
         WebView web = new WebView(context);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -41,7 +41,10 @@ final class Watch3D {
         web.setVerticalScrollBarEnabled(false);
         // The page cannot read preferences, so apply them once it exists.
         web.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView v, String url) { applyCard(v); }
+            @Override public void onPageFinished(WebView v, String url) {
+                applyCard(v);
+                if (onReady != null) onReady.run();      // state pushed before this was lost
+            }
         });
         web.loadUrl("file:///android_asset/lock.html");
         return web;
@@ -74,12 +77,25 @@ final class Watch3D {
                         return true;
                     }
                 });
+        final float[] lastFocusY = {0f};
+        final boolean[] panning = {false};
         web.setOnTouchListener((v, e) -> {
             // Only claim the gesture once a second finger is down, so a one-finger drag can
-            // still scroll the page it sits in.
+            // still scroll or turn the watch.
             if (e.getPointerCount() > 1) {
                 ViewParent parent = v.getParent();
                 if (parent != null) parent.requestDisallowInterceptTouchEvent(true);
+                float fy = (e.getY(0) + e.getY(1)) / 2f;
+                if (e.getActionMasked() == MotionEvent.ACTION_MOVE && panning[0]) {
+                    float dy = fy - lastFocusY[0];
+                    if (Math.abs(dy) > 0.5f) {
+                        web.evaluateJavascript("window.__lock&&__lock.nudge(" + dy + ")", null);
+                    }
+                }
+                lastFocusY[0] = fy;
+                panning[0] = true;
+            } else {
+                panning[0] = false;
             }
             detector.onTouchEvent(e);
             return false;                                   // the page still sees every event

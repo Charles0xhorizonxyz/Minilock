@@ -11,28 +11,32 @@ public class PreviewActivity extends Activity {
 
     private WebView web;
     private TiltBridge tilt;
+    private BatteryBridge battery;
     private float downX, downY;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        web = Watch3D.view(this);
+        web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); });
         web.setContentDescription("Fullscreen 3D pocket watch. Swipe up to return.");
         setContentView(web);
         Watch3D.immersive(getWindow());     // after setContentView, or the decor view is null
         tilt = new TiltBridge(this, web);
         Watch3D.enablePinch(web);
+        battery = new BatteryBridge(this, web);
     }
 
     @Override protected void onResume() {
         super.onResume();
         if (web != null) web.onResume();
         if (tilt != null) tilt.start();
+        if (battery != null) battery.start();
     }
 
     @Override protected void onPause() {
         super.onPause();
         if (tilt != null) tilt.stop();
+        if (battery != null) battery.stop();
         if (web != null) web.onPause();
     }
 
