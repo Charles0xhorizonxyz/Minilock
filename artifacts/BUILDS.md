@@ -11,6 +11,10 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.04-debug.apk` | 0.0.04 | 2026-09-14 01:38 | 242,784 B | `d10089f6318644e3` | Dropped the Atelier name everywhere: package is now com.miniscreen.minilock, AtelierDreamService renamed, label is Minilock, the dial wordmark is MINISCREEN. **Fixed the crash** - getInsetsController() was called before setContentView, so the decor view was null. The 3D pocket watch replaces the flat dial in the app and preview. |
 | `Minilock-v0.0.05-debug.apk` | 0.0.05 | 2026-09-14 01:40 | 243,076 B | `e133fad487ed3937` | Chrome switch on the shared WebView host: #bare for the in-app hero, #preview fullscreen, none for the lock screen. Stops the unlock hint and card appearing where they do not belong. |
 | `Minilock-v0.0.06-debug.apk` | 0.0.06 | 2026-09-14 02:02 | 263,973 B | `0da3dd9a340c6ef4` | Camera now fits the watch to the viewport, so the case no longer clips on a tall screen. Pinch to zoom, double tap to reset. Gyroscope moved into a shared TiltBridge and wired into all three surfaces, not just the lock screen. Unlock hint removed. |
+| `Minilock-v0.0.07-debug.apk` | 0.0.07 | 2026-09-14 02:05 | 244,484 B | `ecadd4739385329d` | Card under the watch became a user setting (Prefs.card), applied live through __lock.setCard rather than on next launch. Hero keeps its gestures so the ScrollView cannot eat the pinch. |
+| `Minilock-v0.0.08-debug.apk` | 0.0.08 | 2026-09-14 02:06 | 244,672 B | `b63b4ede2c9e3991` | Camera reserves vertical room when the card is showing. |
+| `Minilock-v0.0.09-debug.apk` | 0.0.09 | 2026-09-14 02:08 | 244,744 B | `a9915737ccf10d65` | **Added the viewport meta tag.** WebView defaults to a 980px viewport and scales the page down, which is why every label rendered tiny and soft. Also disabled WebView caching, since the asset URL never changes between versions. |
+| `Minilock-v0.0.10-debug.apk` | 0.0.10 | 2026-09-14 02:10 | 244,936 B | `044efe5cd09d669d` | Camera measures the card's real height instead of guessing, fits the watch into the space left, and aims lower so it rides above the text. |
 
 ## Conventions
 

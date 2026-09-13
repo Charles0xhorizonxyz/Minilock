@@ -1,3 +1,4 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Miniscreen in the Round</title>
 
 <style>
@@ -871,12 +872,22 @@ var loop = function loop(now){
 };
 
 /* ---- framing: fit the whole object, then let the user pinch ---- */
-const CAM_Y=-0.15;
-const NEED_W=2.30, NEED_H=3.20;     // world units: the case is 2.0 across, the bow adds height
-let camFit=9.2, zoom=1;
+// World units the object needs: the case is 2.0 across, and from the look-at point it reaches
+// 1.79 up to the top of the bow and 0.85 down. Rather than guess a constant for the card, we
+// measure it: it reserves its real share of the viewport, and the watch is fitted into, and
+// centred in, whatever is left. On a tall phone the fit stays width-limited so nothing shrinks.
+const NEED_W=2.30, NEED_H=3.70;
+let camFit=9.2, zoom=1, cardOn=true, lookY=-0.15;
 function fitCamera(aspect){
   const t=Math.tan(camera.fov*Math.PI/360);
-  camFit=Math.max((NEED_H/2)/t, (NEED_W/2)/(t*Math.max(0.2,aspect)));
+  const card=document.querySelector(".cardwrap");
+  const vh=window.innerHeight||1;
+  const frac=(cardOn && card && card.offsetHeight)
+      ? Math.min(0.45,(card.offsetHeight + vh*0.07)/vh) : 0;
+  const need=NEED_H/Math.max(0.5,1-frac);
+  camFit=Math.max((need/2)/t,(NEED_W/2)/(t*Math.max(0.2,aspect)));
+  const visible=2*camFit*t;           // world units across the viewport height
+  lookY=-0.15-visible*frac/2;         // aim lower so the watch rides above the card
 }
 
 /* ---- gyroscope: the phone moves, the watch and the room do not ---- */
@@ -885,6 +896,12 @@ window.__lock={
   setTilt(px,py){                     // radians, already relative to the baseline
     wantX=Math.max(-0.42,Math.min(0.42,px));
     wantY=Math.max(-0.58,Math.min(0.58,py));
+  },
+  setCard(on){                        // the line of text under the watch is a user setting
+    const card=document.querySelector(".cardwrap");
+    if(card) card.style.display = on ? "" : "none";
+    cardOn=!!on;
+    fitCamera(camera.aspect);         // reserve room for it, or take the room back
   },
   recentre(){ wantX=wantY=0; }
 };
@@ -897,19 +914,13 @@ function applyCamera(){
   const d=camFit*zoom;
   camera.position.set(
     Math.sin(tiltY)*Math.cos(tiltX)*d,
-    CAM_Y+Math.sin(tiltX)*d,
+    lookY+Math.sin(tiltX)*d,
     Math.cos(tiltY)*Math.cos(tiltX)*d
   );
-  camera.lookAt(0,CAM_Y,0);
+  camera.lookAt(0,lookY,0);
 }
 const _rawLoop=loop;
 loop=function(now){ applyCamera(); _rawLoop(now); };
-
-/* ---- the host picks its chrome: #bare drops the card for the in-app hero ---- */
-if((location.hash||"").indexOf("bare")>=0){
-  const card=document.querySelector(".cardwrap");
-  if(card) card.style.display="none";
-}
 
 /* ---- pinch to zoom, double tap to reset ---- */
 (function(){

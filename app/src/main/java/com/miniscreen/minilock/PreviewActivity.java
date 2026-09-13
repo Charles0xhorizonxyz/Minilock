@@ -16,7 +16,7 @@ public class PreviewActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        web = Watch3D.view(this, "preview");
+        web = Watch3D.view(this);
         web.setContentDescription("Fullscreen 3D pocket watch. Swipe up to return.");
         setContentView(web);
         Watch3D.immersive(getWindow());     // after setContentView, or the decor view is null

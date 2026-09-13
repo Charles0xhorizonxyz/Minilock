@@ -9,4 +9,5 @@ final class Prefs {
     static boolean ambient(Context c) { return get(c).getBoolean("ambient", true); }
     static boolean sweep(Context c) { return get(c).getBoolean("sweep", true); }
     static boolean lock(Context c) { return get(c).getBoolean("lock", false); }
+    static boolean card(Context c) { return get(c).getBoolean("card", true); }
 }

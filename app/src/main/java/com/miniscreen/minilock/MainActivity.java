@@ -57,7 +57,8 @@ public class MainActivity extends Activity {
         add(subtitle, 26);
 
         // The watch itself, in 3D. Tilt the phone and the light moves across the gold.
-        hero = Watch3D.view(this, "bare");
+        hero = Watch3D.view(this);
+        Watch3D.keepGestures(hero);   // or the ScrollView eats the pinch
         int width = (int) (getResources().getDisplayMetrics().widthPixels
                 / getResources().getDisplayMetrics().density);
         add(hero, Math.min(430, width + 40));
@@ -68,7 +69,7 @@ public class MainActivity extends Activity {
         edition.setLetterSpacing(.15f);
         edition.setGravity(Gravity.CENTER);
         add(edition, 26);
-        TextView turn = text("Drag to turn it over · the crown winds it", 11, muted);
+        TextView turn = text("Drag to turn it over · pinch to zoom · double tap to reset", 11, muted);
         turn.setGravity(Gravity.CENTER);
         add(turn, 24);
 
@@ -77,6 +78,8 @@ public class MainActivity extends Activity {
         toggle("Sweeping seconds", "A fluid, mechanical rhythm", "sweep", Prefs.sweep(this));
         toggle("Stand-in lock screen", "The 3D watch when the screen wakes", "lock",
                 Prefs.lock(this));
+        toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
+                Prefs.card(this));
 
         TextView overlay = text("Allow display over other apps   ↗", 12, gold);
         overlay.setPadding(0, dp(14), 0, 0);
@@ -133,8 +136,10 @@ public class MainActivity extends Activity {
         control.setChecked(checked);
         control.setContentDescription(title);
         control.setThumbTintList(android.content.res.ColorStateList.valueOf(gold));
-        control.setOnCheckedChangeListener(
-                (v, on) -> Prefs.get(this).edit().putBoolean(key, on).apply());
+        control.setOnCheckedChangeListener((v, on) -> {
+            Prefs.get(this).edit().putBoolean(key, on).apply();
+            if ("card".equals(key)) Watch3D.applyCard(hero);   // no need to wait for a reload
+        });
         row.addView(control, new LinearLayout.LayoutParams(dp(52), dp(48)));
         add(row, -2);
         View line = new View(this);
