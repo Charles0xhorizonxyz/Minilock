@@ -34,6 +34,7 @@ public class LockScreenActivity extends Activity {
         setContentView(web);
         Watch3D.immersive(getWindow());   // after setContentView, or getInsetsController() is null
         tilt = new TiltBridge(this, web);
+        Watch3D.enablePinch(web);
     }
 
     @Override protected void onResume() {

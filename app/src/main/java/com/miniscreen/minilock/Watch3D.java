@@ -3,6 +3,8 @@ package com.miniscreen.minilock;
 import android.content.Context;
 import android.os.Build;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.ViewParent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -53,19 +55,33 @@ final class Watch3D {
     }
 
     /**
-     * Let the watch keep a gesture that started on it.
+     * Pinch to zoom, handled natively.
      *
-     * Inside a ScrollView the parent would otherwise claim the drag, so a pinch turns into a
-     * scroll and the watch never zooms.
+     * The page has its own touch handlers, but inside a ScrollView they never reliably see a
+     * two-finger gesture: the parent claims it as a scroll first. ScaleGestureDetector reads it
+     * here and pushes the result into the scene, which also means the camera zooms and
+     * re-renders sharp rather than the page being scaled up and blurred.
      */
-    static void keepGestures(WebView web) {
+    static void enablePinch(WebView web) {
+        final float[] zoom = {1f};
+        final ScaleGestureDetector detector = new ScaleGestureDetector(web.getContext(),
+                new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                    @Override public boolean onScale(ScaleGestureDetector d) {
+                        // zoom is a camera DISTANCE multiplier, so fingers apart means divide
+                        zoom[0] = Math.max(0.42f, Math.min(2.4f, zoom[0] / d.getScaleFactor()));
+                        web.evaluateJavascript(
+                                "window.__lock&&__lock.setZoom(" + zoom[0] + ")", null);
+                        return true;
+                    }
+                });
         web.setOnTouchListener((v, e) -> {
-            int action = e.getActionMasked();
-            if (action == MotionEvent.ACTION_DOWN) {
-                v.getParent().requestDisallowInterceptTouchEvent(true);
-            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                v.getParent().requestDisallowInterceptTouchEvent(false);
+            // Only claim the gesture once a second finger is down, so a one-finger drag can
+            // still scroll the page it sits in.
+            if (e.getPointerCount() > 1) {
+                ViewParent parent = v.getParent();
+                if (parent != null) parent.requestDisallowInterceptTouchEvent(true);
             }
+            detector.onTouchEvent(e);
             return false;                                   // the page still sees every event
         });
     }

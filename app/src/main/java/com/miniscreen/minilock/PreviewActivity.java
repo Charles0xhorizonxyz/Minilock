@@ -21,6 +21,7 @@ public class PreviewActivity extends Activity {
         setContentView(web);
         Watch3D.immersive(getWindow());     // after setContentView, or the decor view is null
         tilt = new TiltBridge(this, web);
+        Watch3D.enablePinch(web);
     }
 
     @Override protected void onResume() {

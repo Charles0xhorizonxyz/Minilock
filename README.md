@@ -17,6 +17,8 @@ Everything is drawn with `android.graphics.Canvas`. No network access, no accoun
 
 The Android app currently ships the **original** dial. The redesign lives in the prototypes under [`tools/`](tools/) and has not been ported yet.
 
+Open questions and every correction so far are tracked in [docs/CORRECTIONS.md](docs/CORRECTIONS.md).
+
 ## Repository layout
 
 ```

@@ -44,6 +44,11 @@ header,.panel,.notes,.stage>p,.readout{display:none!important}
 .cardwrap{bottom:6%}
 </style>""")
 
+# A tap must not turn the watch over: it collides with double-tap-to-zoom, and the handler is
+# registered by value so it cannot be wrapped afterwards. Drag still turns it.
+sub("  if(moved<5) windOver();                    // a tap winds it, a drag keeps its speed",
+    "  // a tap deliberately does nothing here: it collided with double-tap-to-zoom")
+
 # make loop reassignable so the camera pass can wrap it
 sub("function loop(now){", "var loop = function loop(now){")
 
@@ -72,17 +77,15 @@ requestAnimationFrame(loop);
 // measure it: it reserves its real share of the viewport, and the watch is fitted into, and
 // centred in, whatever is left. On a tall phone the fit stays width-limited so nothing shrinks.
 const NEED_W=2.30, NEED_H=3.70;
-let camFit=9.2, zoom=1, cardOn=true, lookY=-0.15;
+let camFit=9.2, zoom=1, cardOn=true, cardFrac=0;
 function fitCamera(aspect){
   const t=Math.tan(camera.fov*Math.PI/360);
   const card=document.querySelector(".cardwrap");
   const vh=window.innerHeight||1;
-  const frac=(cardOn && card && card.offsetHeight)
+  cardFrac=(cardOn && card && card.offsetHeight)
       ? Math.min(0.45,(card.offsetHeight + vh*0.07)/vh) : 0;
-  const need=NEED_H/Math.max(0.5,1-frac);
+  const need=NEED_H/Math.max(0.5,1-cardFrac);
   camFit=Math.max((need/2)/t,(NEED_W/2)/(t*Math.max(0.2,aspect)));
-  const visible=2*camFit*t;           // world units across the viewport height
-  lookY=-0.15-visible*frac/2;         // aim lower so the watch rides above the card
 }
 
 /* ---- gyroscope: the phone moves, the watch and the room do not ---- */
@@ -98,6 +101,10 @@ window.__lock={
     cardOn=!!on;
     fitCamera(camera.aspect);         // reserve room for it, or take the room back
   },
+  setZoom(z){                         // driven natively by ScaleGestureDetector
+    zoom=Math.max(0.42,Math.min(2.4,z));
+    dragging=false;                   // a pinch must not also spin the watch
+  },
   recentre(){ wantX=wantY=0; }
 };
 function applyCamera(){
@@ -107,6 +114,11 @@ function applyCamera(){
   tiltX+=(wantX-tiltX)*0.12;          // damped enough to feel like glass rather than jelly
   tiltY+=(wantY-tiltY)*0.12;
   const d=camFit*zoom;
+  // The offset that makes room for the card must be derived from the CURRENT distance. Taking
+  // it from the fitted distance meant zooming in kept a far-view offset and threw the watch
+  // clean off the top of the frame.
+  const t=Math.tan(camera.fov*Math.PI/360);
+  const lookY=-0.15-(2*d*t)*cardFrac/2;
   camera.position.set(
     Math.sin(tiltY)*Math.cos(tiltX)*d,
     lookY+Math.sin(tiltX)*d,
@@ -128,7 +140,9 @@ loop=function(now){ applyCamera(); _rawLoop(now); };
       startGap=gap(e.touches); startZoom=zoom;
     }else if(e.touches.length===1){
       const now=Date.now();
-      if(now-lastTap<300){ zoom=1; }          // double tap returns to the fitted framing
+      if(now-lastTap<300){                    // double tap toggles close-up / fitted
+        zoom = zoom>0.75 ? 0.46 : 1;
+      }
       lastTap=now;
     }
   },{passive:true});

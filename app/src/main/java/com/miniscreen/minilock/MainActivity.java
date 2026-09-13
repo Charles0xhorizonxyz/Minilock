@@ -30,6 +30,8 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        scroll.setVerticalScrollBarEnabled(false);      // no scrollbar over the watch
+        scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
         scroll.setBackgroundColor(ink);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -57,24 +59,24 @@ public class MainActivity extends Activity {
         title.setTypeface(Typeface.create("serif", Typeface.NORMAL));
         title.setGravity(Gravity.CENTER);
         add(title, 43);
-        TextView subtitle = text("A quiet moment. An extraordinary dial.", 12, muted);
+        TextView subtitle = text("A quiet moment. An extraordinary dial.", 13, muted);
         subtitle.setGravity(Gravity.CENTER);
         add(subtitle, 26);
 
         // The watch itself, in 3D. Tilt the phone and the light moves across the gold.
         hero = Watch3D.view(this);
-        Watch3D.keepGestures(hero);   // or the ScrollView eats the pinch
+        Watch3D.enablePinch(hero);    // ScrollView would otherwise eat the pinch
         int width = (int) (getResources().getDisplayMetrics().widthPixels
                 / getResources().getDisplayMetrics().density);
-        add(hero, Math.min(430, width + 40));
+        add(hero, Math.min(560, (int) (width * 1.45f)));   // tall enough for the dial to be legible
         hero.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
         tilt = new TiltBridge(this, hero);
 
-        TextView edition = text("EDITION 01", 10, gold);
+        TextView edition = text("EDITION 01", 11, gold);
         edition.setLetterSpacing(.15f);
         edition.setGravity(Gravity.CENTER);
         add(edition, 26);
-        TextView turn = text("Drag to turn it over · pinch to zoom · double tap to reset", 11, muted);
+        TextView turn = text("Double tap to zoom in · pinch to scale · drag to turn it over", 12, muted);
         turn.setGravity(Gravity.CENTER);
         add(turn, 24);
 
@@ -86,7 +88,7 @@ public class MainActivity extends Activity {
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
                 Prefs.card(this));
 
-        TextView overlay = text("Allow display over other apps   ↗", 12, gold);
+        TextView overlay = text("Allow display over other apps   ↗", 14, gold);
         overlay.setPadding(0, dp(14), 0, 0);
         overlay.setOnClickListener(v -> startActivity(new Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -94,7 +96,7 @@ public class MainActivity extends Activity {
         add(overlay, -2);
         TextView caution = text("Requires your real screen lock set to None. The phone is then not "
                 + "actually locked — Home escapes this, and no app can stop that. A stopgap "
-                + "until the custom build.", 11, 0xFFC98A8A);
+                + "until the custom build.", 12, 0xFFC98A8A);
         caution.setLineSpacing(dp(3), 1);
         caution.setPadding(0, dp(8), 0, 0);
         add(caution, -2);
@@ -120,7 +122,7 @@ public class MainActivity extends Activity {
             }
         });
         TextView note = text("The screensaver and live wallpaper draw the flat Canvas dial; "
-                + "the 3D watch needs a WebView, which those surfaces cannot host.", 11, muted);
+                + "the 3D watch needs a WebView, which those surfaces cannot host.", 12, muted);
         note.setGravity(Gravity.CENTER);
         note.setLineSpacing(dp(3), 1);
         add(note, -2);
@@ -132,8 +134,8 @@ public class MainActivity extends Activity {
         row.setPadding(0, dp(15), 0, dp(10));
         LinearLayout labels = new LinearLayout(this);
         labels.setOrientation(LinearLayout.VERTICAL);
-        labels.addView(text(title, 14, 0xFFE7E4DF));
-        TextView description = text(desc, 10, muted);
+        labels.addView(text(title, 16, 0xFFE7E4DF));
+        TextView description = text(desc, 12, muted);
         description.setPadding(0, dp(5), 0, 0);
         labels.addView(description);
         row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
