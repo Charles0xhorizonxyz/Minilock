@@ -52,11 +52,11 @@ Every build is archived — bump `versionName` in [`app/build.gradle`](app/build
 ## Installing
 
 ```bash
-adb install -r artifacts/Miniscreen-v0.0.02-debug.apk
+adb install -r artifacts/Minilock-v0.0.05-debug.apk
 ```
 
-- **Screensaver** — Settings → Display → Screen saver → Miniscreen
-- **Live wallpaper** — Settings → Wallpaper → Live wallpapers → Miniscreen
+- **Screensaver** — Settings → Display → Screen saver → Minilock
+- **Live wallpaper** — Settings → Wallpaper → Live wallpapers → Minilock
 
 Debug builds are signed with the local Android debug key and are not distributable.
 

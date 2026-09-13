@@ -1,4 +1,4 @@
-package com.miniscreen.atelier;
+package com.miniscreen.minilock;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -68,7 +68,7 @@ public class LockService extends Service {
         return builder
                 .setContentTitle("Miniscreen lock screen")
                 .setContentText("Showing the dial when the screen wakes")
-                .setSmallIcon(R.drawable.ic_atelier)
+                .setSmallIcon(R.drawable.ic_minilock)
                 .setOngoing(true)
                 .build();
     }

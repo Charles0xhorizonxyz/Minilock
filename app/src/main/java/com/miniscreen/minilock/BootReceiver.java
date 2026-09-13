@@ -1,4 +1,4 @@
-package com.miniscreen.atelier;
+package com.miniscreen.minilock;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

@@ -1,8 +1,8 @@
-package com.miniscreen.atelier;
+package com.miniscreen.minilock;
 
 import android.service.dreams.DreamService;
 
-public class AtelierDreamService extends DreamService {
+public class MinilockDreamService extends DreamService {
     @Override public void onAttachedToWindow() {
         super.onAttachedToWindow();
         setInteractive(false);

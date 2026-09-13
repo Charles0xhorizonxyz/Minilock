@@ -1,13 +1,13 @@
 plugins { id 'com.android.application' }
 android {
-    namespace 'com.miniscreen.atelier'
+    namespace 'com.miniscreen.minilock'
     compileSdk 36
     defaultConfig {
-        applicationId 'com.miniscreen.atelier'
+        applicationId 'com.miniscreen.minilock'
         minSdk 26
         targetSdk 36
-        versionCode 3
-        versionName '0.0.03'
+        versionCode 5
+        versionName '0.0.05'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

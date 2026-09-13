@@ -1,4 +1,4 @@
 <wallpaper xmlns:android="http://schemas.android.com/apk/res/android"
-    android:thumbnail="@drawable/ic_atelier"
+    android:thumbnail="@drawable/ic_minilock"
     android:description="@string/wallpaper_description"
-    android:settingsActivity="com.miniscreen.atelier.MainActivity" />
+    android:settingsActivity="com.miniscreen.minilock.MainActivity" />

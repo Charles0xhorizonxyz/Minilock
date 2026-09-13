@@ -1,4 +1,4 @@
-package com.miniscreen.atelier;
+package com.miniscreen.minilock;
 
 import android.app.Activity;
 import android.hardware.Sensor;
@@ -8,10 +8,7 @@ import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.MotionEvent;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
 import android.view.WindowManager;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 /**
@@ -49,30 +46,9 @@ public class LockScreenActivity extends Activity implements SensorEventListener 
                     | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
         }
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if (Build.VERSION.SDK_INT >= 30) {
-            getWindow().setDecorFitsSystemWindows(false);
-            WindowInsetsController c = getWindow().getInsetsController();
-            if (c != null) {
-                c.hide(WindowInsets.Type.systemBars());
-                c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
-        } else {
-            getWindow().getDecorView().setSystemUiVisibility(5894);
-        }
-
-        web = new WebView(this);
-        WebSettings s = web.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setAllowFileAccess(true);                       // only ever loads file:///android_asset
-        s.setAllowFileAccessFromFileURLs(false);
-        s.setAllowUniversalAccessFromFileURLs(false);
-        s.setDomStorageEnabled(false);
-        s.setMediaPlaybackRequiresUserGesture(true);
-        web.setBackgroundColor(0xFF000000);
-        web.setHorizontalScrollBarEnabled(false);
-        web.setVerticalScrollBarEnabled(false);
-        web.loadUrl("file:///android_asset/lock.html");
+        web = Watch3D.view(this, "");
         setContentView(web);
+        Watch3D.immersive(getWindow());   // after setContentView, or getInsetsController() is null
 
         sensors = (SensorManager) getSystemService(SENSOR_SERVICE);
         if (sensors != null) {

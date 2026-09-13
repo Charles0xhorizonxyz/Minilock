@@ -876,6 +876,13 @@ var loop = function loop(now){
 /* ---- gyroscope: the phone moves, the watch and the room do not ---- */
 const CAM_R=9.2, CAM_Y=-0.15;
 let tiltX=0, tiltY=0, wantX=0, wantY=0;
+// the host picks its chrome: #bare = watch only, #preview = different wording
+(function(){
+  const h=location.hash||"", hint=document.querySelector(".hint"),
+        card=document.querySelector(".cardwrap");
+  if(h.indexOf("bare")>=0){ if(hint)hint.style.display="none"; if(card)card.style.display="none"; }
+  else if(h.indexOf("preview")>=0 && hint){ hint.textContent="Swipe up to return"; }
+})();
 window.__lock={
   setTilt(px,py){                     // radians, already relative to the baseline
     wantX=Math.max(-0.40,Math.min(0.40,px));

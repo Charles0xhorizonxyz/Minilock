@@ -1,4 +1,4 @@
-package com.miniscreen.atelier;
+package com.miniscreen.minilock;
 
 import android.graphics.Canvas;
 import android.graphics.Color;

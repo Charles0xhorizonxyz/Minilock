@@ -1,4 +1,4 @@
-package com.miniscreen.atelier;
+package com.miniscreen.minilock;
 
 import android.content.Context;
 import android.graphics.*;
@@ -21,7 +21,7 @@ public class WatchView extends View {
         {0xFFD3A28D, 0xFFFFE0CA, 0xFF302225}
     };
     public WatchView(Context c) {
-        super(c); setContentDescription("Atelier analog clock with day, date and 24-hour subdials");
+        super(c); setContentDescription("Minilock analog clock with day, date and 24-hour subdials");
         for(int i=0;i<3;i++) {
             bezels[i]=new LinearGradient(-260,-280,220,290,new int[]{0xFF302E2B,finishes[i][1],0xFF685A46,finishes[i][0],0xFF24282B},null,Shader.TileMode.CLAMP);
             dials[i]=new RadialGradient(-80,-100,480,new int[]{finishes[i][2],0xFF080E17},null,Shader.TileMode.CLAMP);
@@ -72,8 +72,8 @@ public class WatchView extends View {
             if(i==12) { fill(gold); c.drawRect(-12,-229,-8,-201,p); }
             c.restore();
         }
-        label(c,"A T E L I E R",0,-143,23,light,true);
-        label(c,"M I N I S C R E E N",0,-121,8,gold,false);
+        label(c,"M I N I S C R E E N",0,-138,17,light,true);
+        label(c,"E D I T I O N   0 1",0,-118,7.5f,gold,false);
         subdial(c,-112,8,"DAY",(now.getDayOfWeek().getValue()-1)/7f*360,DAYS);
         subdial(c,112,8,"DATE",(now.getDayOfMonth()-1)/31f*360,DATES);
         subdial(c,0,119,"24 H",(now.getHour()+now.getMinute()/60f)*15,HOURS);
