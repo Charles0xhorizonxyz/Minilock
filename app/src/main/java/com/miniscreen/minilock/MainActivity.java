@@ -45,7 +45,12 @@ public class MainActivity extends Activity {
             return insets;
         });
 
-        TextView masthead = text("M I N I S C R E E N", 11, gold);
+        // Show the version in the app, so "is this actually the new build?" is never a guess.
+        String version = "";
+        try {
+            version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (android.content.pm.PackageManager.NameNotFoundException ignored) { }
+        TextView masthead = text("M I N I S C R E E N   ·   v" + version, 11, gold);
         masthead.setGravity(Gravity.CENTER);
         add(masthead, 28);
         TextView title = text("The art of passing time.", 28, 0xFFF1EDE5);

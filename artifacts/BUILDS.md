@@ -15,6 +15,7 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.08-debug.apk` | 0.0.08 | 2026-09-14 02:06 | 244,672 B | `b63b4ede2c9e3991` | Camera reserves vertical room when the card is showing. |
 | `Minilock-v0.0.09-debug.apk` | 0.0.09 | 2026-09-14 02:08 | 244,744 B | `a9915737ccf10d65` | **Added the viewport meta tag.** WebView defaults to a 980px viewport and scales the page down, which is why every label rendered tiny and soft. Also disabled WebView caching, since the asset URL never changes between versions. |
 | `Minilock-v0.0.10-debug.apk` | 0.0.10 | 2026-09-14 02:10 | 244,936 B | `044efe5cd09d669d` | Camera measures the card's real height instead of guessing, fits the watch into the space left, and aims lower so it rides above the text. |
+| `Minilock-v0.0.11-debug.apk` | 0.0.11 | 2026-09-14 02:18 | 245,116 B | `1ab7a2913d598928` | Shows the version in the masthead, so which build is running is never a guess. |
 
 ## Conventions
 
