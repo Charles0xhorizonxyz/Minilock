@@ -929,21 +929,15 @@ function applyCamera(){
 const _rawLoop=loop;
 loop=function(now){ applyCamera(); _rawLoop(now); };
 
-/* ---- pinch to zoom, double tap to reset ---- */
+/* ---- pinch inside the page, for hosts that are not wrapped in a ZoomLayout ---- */
 (function(){
   const el=document.getElementById("gl");
-  let pinching=false, startGap=0, startZoom=1, lastTap=0;
+  let pinching=false, startGap=0, startZoom=1;
   const gap=t=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
   el.addEventListener("touchstart",e=>{
     if(e.touches.length===2){
       pinching=true; dragging=false;          // a pinch must not also spin the watch
       startGap=gap(e.touches); startZoom=zoom;
-    }else if(e.touches.length===1){
-      const now=Date.now();
-      if(now-lastTap<300){                    // double tap toggles close-up / fitted
-        zoom = zoom>0.75 ? 0.46 : 1;
-      }
-      lastTap=now;
     }
   },{passive:true});
   el.addEventListener("touchmove",e=>{

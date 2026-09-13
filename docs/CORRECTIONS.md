@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.14**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.16**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -22,7 +22,15 @@ You raised this first, and you were right that it kept not being fixed:
 2. **Broken again in v0.0.10.** I added a look-at offset so the watch would sit above the card, but computed it from the *fitted* distance. Zooming in kept a far-view offset and threw the watch clean off the top of the frame — which is what you saw.
 3. **Fixed in v0.0.13:** the offset is now derived from the current camera distance, so it stays correct at any zoom.
 
-### 29 — Pinch zoom
+### 29 — Zoom
+
+I solved the wrong problem for several versions. You meant **the app screen** — what opens when you tap Minilock — and I kept making the *watch's 3D camera* zoom instead.
+
+**v0.0.15** wraps the whole screen in a `ZoomLayout`: two fingers scale and pan everything (text, toggles, watch), one finger passes straight through so switches and scrolling behave. **v0.0.16** turns off `ScaleGestureDetector`'s quick-scale, which is enabled by default and let a one-finger double-tap-drag zoom by accident.
+
+Verified on device: the zoom transform fires and renders, and a single tap still flips a toggle. Not verified: an actual two-finger pinch, which adb cannot simulate.
+
+### 29b — Pinch on the watch (earlier attempt)
 
 Added in v0.0.06 in the page's own touch handlers, and I reported it as working. It was not. Inside a `ScrollView` the parent claims a two-finger gesture as a scroll before the page ever sees it. **v0.0.14** reads the pinch natively with `ScaleGestureDetector` and pushes the result into the scene, so the camera moves and the watch re-renders sharp rather than the page being scaled and blurred.
 

@@ -19,6 +19,8 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.12-debug.apk` | 0.0.12 | 2026-09-14 02:21 | 245,188 B | `a688c91a019e3d33` | Taller hero, no scrollbar, larger app text, double tap zooms. |
 | `Minilock-v0.0.13-debug.apk` | 0.0.13 | 2026-09-14 02:23 | 245,260 B | `c13aba4d1822c0cc` | **Fixed the framing regression**: the look-at offset that makes room for the card was taken from the fitted distance, so zooming in threw the watch off the top. It now derives from the current distance. Tap no longer flips the watch, which collided with double-tap zoom. |
 | `Minilock-v0.0.14-debug.apk` | 0.0.14 | 2026-09-14 02:26 | 245,744 B | `10519d8d556842ae` | **Pinch zoom actually works**: read natively with ScaleGestureDetector instead of the page touch handlers, which a ScrollView claimed as a scroll before the page saw them. |
+| `Minilock-v0.0.15-debug.apk` | 0.0.15 | 2026-09-14 02:34 | 247,540 B | `aa077647a43a88ec` | Whole app screen wrapped in a ZoomLayout: two fingers scale and pan everything, one finger passes through. Page double-tap zoom removed so it cannot fight it. |
+| `Minilock-v0.0.16-debug.apk` | 0.0.16 | 2026-09-14 02:35 | 247,568 B | `34c827fe82a0a223` | Disabled ScaleGestureDetector quick-scale, which is on by default and let a one-finger double-tap-drag zoom by accident. |
 
 ## Conventions
 

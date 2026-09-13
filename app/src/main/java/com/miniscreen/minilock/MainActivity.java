@@ -10,6 +10,7 @@ import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.webkit.WebView;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Switch;
@@ -20,6 +21,7 @@ public class MainActivity extends Activity {
     private final int ink = 0xFF090C10, gold = 0xFFC9AA7C, muted = 0xFF88919C;
     private LinearLayout content;
     private WebView hero;
+    private ZoomLayout zoom;
     private TiltBridge tilt;
 
     private int dp(float value) {
@@ -37,7 +39,10 @@ public class MainActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(24), dp(18), dp(24), dp(24));
         scroll.addView(content);
-        setContentView(scroll);
+        zoom = new ZoomLayout(this);
+        zoom.setBackgroundColor(ink);
+        zoom.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(zoom);
         scroll.setOnApplyWindowInsetsListener((v, insets) -> {
             if (android.os.Build.VERSION.SDK_INT >= 30) {
                 android.graphics.Insets bars =
@@ -65,7 +70,6 @@ public class MainActivity extends Activity {
 
         // The watch itself, in 3D. Tilt the phone and the light moves across the gold.
         hero = Watch3D.view(this);
-        Watch3D.enablePinch(hero);    // ScrollView would otherwise eat the pinch
         int width = (int) (getResources().getDisplayMetrics().widthPixels
                 / getResources().getDisplayMetrics().density);
         add(hero, Math.min(560, (int) (width * 1.45f)));   // tall enough for the dial to be legible
@@ -76,7 +80,7 @@ public class MainActivity extends Activity {
         edition.setLetterSpacing(.15f);
         edition.setGravity(Gravity.CENTER);
         add(edition, 26);
-        TextView turn = text("Double tap to zoom in · pinch to scale · drag to turn it over", 12, muted);
+        TextView turn = text("Pinch anywhere to zoom the screen · drag the watch to turn it over", 12, muted);
         turn.setGravity(Gravity.CENTER);
         add(turn, 24);
 
@@ -179,6 +183,11 @@ public class MainActivity extends Activity {
         lp.topMargin = dp(top);
         lp.bottomMargin = dp(bottom);
         content.addView(v, lp);
+    }
+
+    @Override public void onBackPressed() {
+        if (zoom != null && zoom.isZoomed()) { zoom.reset(); return; }   // back un-zooms first
+        super.onBackPressed();
     }
 
     @Override protected void onResume() {
