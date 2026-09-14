@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.47**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.48**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -123,6 +123,7 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 68 | (found while testing) Nothing was staged after an app update until the app was opened once | **Done and verified** — v0.0.44. The boot receiver also handles the package-replaced broadcast and restarts the lock service. Verified: the watch was staged straight after an install with no app launch. |
 | 69 | The design that flashes briefly after "Reset to default" is the one I prefer; make it an option | **Done and verified** — v0.0.46. The flash was the page's own factory look, shown for the instant between the watch loading and the saved choices landing on top of it: 24k gold, the bright dial with its seconds hand and all complications, the dark studio, and the text under the watch. There is now a "Design" dropdown at the top of the settings list: Factory shows the watch as designed on every surface; Custom is the saved caseback, background and text choices. Changing any of those makes it Custom again; the custom settings are kept while Factory is showing. Size and position are separate from the design. Verified on the phone: picking Factory reloaded the watch in the factory look. Left on Factory, since that is the one preferred. Note the text lines under the watch (next event, alerts, alarm) are still the prototype's demo data, not the phone's. |
 | 70 | Factory came with the text underneath; it should follow the text switch | **Done and verified** — v0.0.47. The text under the watch follows its own switch in both designs; Factory is only the gold, the dial and the studio, and the text switch no longer flips the design to Custom. Verified on the phone: Factory with the switch off shows no text. |
+| 71 | Align all dropdown menus to the right | **Done and verified** — v0.0.48. The selected text ends flush with the switches' right edge and the list opens with its right edge on that same line. Verified: the dropdown's right edge and the switches' right edge are at the same pixel. |
 
 ---
 

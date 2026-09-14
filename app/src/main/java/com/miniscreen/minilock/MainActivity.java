@@ -245,6 +245,7 @@ public class MainActivity extends Activity {
                 t.setTextColor(gold);
                 t.setTextSize(14);
                 t.setGravity(Gravity.END);
+                t.setPadding(dp(8), dp(4), 0, dp(4));       // flush with the switches' edge
                 return t;
             }
             @Override public View getDropDownView(int pos, View convert, ViewGroup parent) {
@@ -258,7 +259,14 @@ public class MainActivity extends Activity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         pick.setAdapter(adapter);
         pick.setBackground(null);                          // the text carries its own arrow
+        pick.setPadding(0, 0, 0, 0);                       // the old background's padding stays otherwise
+        pick.setGravity(Gravity.END);
         pick.setPopupBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0xFF131921));
+        // The list opens with its right edge on the spinner's right edge, not hanging off it.
+        final int menuWidth = dp(230);
+        pick.setDropDownWidth(menuWidth);
+        pick.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
+                pick.setDropDownHorizontalOffset(Math.min(0, (r - l) - menuWidth)));
         pick.setSelection(selected, false);
         pick.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private int last = selected;

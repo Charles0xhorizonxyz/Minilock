@@ -52,6 +52,7 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.45-debug.apk` | 0.0.45 | 2026-09-14 20:37 | 264,944 B | `a8b7f6d0f5084c80` | The second gesture is one action: a hard flick left to right that carries the watch through two full turns. The flick arms it and the spin is watched frame by frame; it fires once the watch crosses the barrier before its second full turn (3.5 pi from where the finger landed) and disarms if it comes to rest short of that. Row renamed "Spin left to right, two turns". |
 | `Minilock-v0.0.46-debug.apk` | 0.0.46 | 2026-09-14 20:53 | 266,136 B | `cd1e9d7941c75a66` | A Design choice, Factory or Custom, at the top of the settings list. Factory shows the watch exactly as designed on every surface (24k gold, bright dial, sweep, dark studio, text under the watch): the look that used to flash for an instant before the saved choices landed. Custom is the saved caseback, background and text; any change to those flips the design back to Custom. Size and position are separate. |
 | `Minilock-v0.0.47-debug.apk` | 0.0.47 | 2026-09-14 21:00 | 266,108 B | `64f59911a15ca938` | The text under the watch follows its own switch in both designs; Factory is only the gold, the dial and the studio, and the text switch no longer flips the design to Custom. |
+| `Minilock-v0.0.48-debug.apk` | 0.0.48 | 2026-09-14 21:05 | 266,608 B | `cb3bd0225e3828d6` | Dropdowns aligned right: the selected text ends flush with the switches' edge and the list opens with its right edge on that line. Layout only. |
 
 ## Conventions
 
