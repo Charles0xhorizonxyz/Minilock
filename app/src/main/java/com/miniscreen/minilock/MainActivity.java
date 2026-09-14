@@ -139,6 +139,17 @@ public class MainActivity extends Activity {
         toggle("Sweeping seconds", "A fluid, mechanical rhythm", "sweep", Prefs.sweep(this));
         toggle("Stand-in lock screen", "The 3D watch when the screen wakes", "lock",
                 Prefs.lock(this));
+        String[] stayKeys = {"15", "30", "60", "120", "300", "600", "-1"};
+        String[] stayNames = {"15 seconds", "30 seconds", "1 minute", "2 minutes", "5 minutes",
+                              "10 minutes", "Always"};
+        dropdown("Watch stays on for", "Then it fades to black on the lock screen; any touch brings it back",
+                stayNames, stayKeys, Gestures.indexOf(stayKeys, String.valueOf(Prefs.lockStay(this))),
+                key -> Prefs.setLockStay(this, Integer.parseInt(key)));
+        String[] fadeKeys = {"1", "3", "5", "10", "20", "30"};
+        String[] fadeNames = {"1 second", "3 seconds", "5 seconds", "10 seconds", "20 seconds", "30 seconds"};
+        dropdown("Fade to black over", "How long the watch takes to go dark",
+                fadeNames, fadeKeys, Gestures.indexOf(fadeKeys, String.valueOf(Prefs.lockFade(this))),
+                key -> Prefs.setLockFade(this, Integer.parseInt(key)));
         choice("Flick right to left", "One turn of the dial on the lock screen", Gestures.LEFT1);
         choice("Spin left to right, two turns", "One hard flick that turns the dial twice on the lock screen", Gestures.RIGHT2);
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",

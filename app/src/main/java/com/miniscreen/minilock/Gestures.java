@@ -25,8 +25,10 @@ final class Gestures {
 
     static String defaultFor(String prefKey) { return LEFT1.equals(prefKey) ? "unlock" : "camera"; }
 
-    static int indexOf(String key) {
-        for (int i = 0; i < KEYS.length; i++) if (KEYS[i].equals(key)) return i;
+    static int indexOf(String key) { return indexOf(KEYS, key); }
+
+    static int indexOf(String[] keys, String key) {
+        for (int i = 0; i < keys.length; i++) if (keys[i].equals(key)) return i;
         return 0;
     }
 

@@ -43,6 +43,7 @@ header,.panel,.notes,.stage>p,.readout{display:none!important}
 .screen{aspect-ratio:auto;width:100vw;height:100vh;border:0;border-radius:0;touch-action:none}
 .cardwrap{bottom:6%}
 .plate{display:none!important}
+#nightfall{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:20}
 #gyrohud{position:fixed;left:0;right:0;top:max(14px,env(safe-area-inset-top));text-align:center;
   font:11px/1.4 monospace;color:#8a93a0;pointer-events:none;z-index:9;white-space:pre}
 </style>""")
@@ -164,7 +165,7 @@ function persist(){
   plate.addEventListener("click",later,true);
   plate.addEventListener("change",later,true); }
 let haveBase=false, lastSpin=0;
-let hud=null, hudAt=0, samples=0, testOffset=null;
+let hud=null, hudAt=0, samples=0, testOffset=null, dark=false, darkTimer=0;
 function retarget(){                  // where the camera should be, relative to where it started
   qWanted.copy(qDevice);
   if(testOffset) qWanted.multiply(testOffset);   // a local turn, as if the hand had made it
@@ -180,6 +181,18 @@ window.__lock={
     if(haveBase) retarget();
   },
   face(){ return Math.cos(theta); },  // 1 dial toward you, -1 caseback; for tests from adb
+  fade(seconds){                      // the lock screen's night: the watch dims to black, then rests
+    let veil=document.getElementById("nightfall");
+    if(!veil){ veil=document.createElement("div"); veil.id="nightfall"; document.body.appendChild(veil); }
+    veil.style.transition="none"; veil.style.opacity="0"; void veil.offsetHeight;   // restart cleanly
+    veil.style.transition="opacity "+Math.max(0.2,+seconds||1)+"s linear"; veil.style.opacity="1";
+    clearTimeout(darkTimer); darkTimer=setTimeout(()=>{ dark=true; }, Math.max(0.2,+seconds||1)*1000+100);
+  },
+  wake(){                             // a touch, or the screen coming back: lift the veil, render again
+    clearTimeout(darkTimer); dark=false;
+    const veil=document.getElementById("nightfall");
+    if(veil){ veil.style.transition="opacity .25s linear"; veil.style.opacity="0"; }
+  },
   setDebug(on){                       // what the gyroscope delivers, in words; preview only
     if(on && !hud){ hud=document.createElement("div"); hud.id="gyrohud"; document.body.appendChild(hud); }
     if(hud) hud.style.display = on ? "block" : "none";
@@ -421,7 +434,10 @@ function tapBack(e){
 }
 
 const _rawLoop=loop;
-loop=function(now){ applyCamera(); _rawLoop(now); };
+loop=function(now){
+  if(dark){ requestAnimationFrame(loop); return; }   // black: nothing to draw, nothing to spend
+  applyCamera(); _rawLoop(now);
+};
 
 /* The page used to run its own pinch handler here. It fought the native ScaleGestureDetector --
    both wrote `zoom` on the same gesture, so they cancelled each other out. The native detector

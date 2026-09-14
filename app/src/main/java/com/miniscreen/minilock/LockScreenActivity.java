@@ -18,6 +18,15 @@ public class LockScreenActivity extends Activity {
     /** True while an instance exists; the service uses it to avoid staging a second one. */
     static volatile boolean alive;
 
+    // The watch shows for the chosen time, then fades to black over the chosen time, then rests:
+    // no rendering, no gyroscope, backlight at its minimum, and the keep-screen-on hold released
+    // so the phone's own screen timeout can turn the display off. An app cannot turn it off
+    // itself without device-admin rights. Any touch lifts the veil and restarts the clock.
+    private final android.os.Handler timer = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable startFade = this::fadeOut;
+    private final Runnable goDark = this::dark;
+    private boolean fading, darkened, swallow;
+
     private WebView web;
     private Gestures.Torch torch;
     private TiltBridge tilt;
@@ -47,13 +56,54 @@ public class LockScreenActivity extends Activity {
         if (web != null) web.onResume();
         if (tilt != null) tilt.start();
         if (battery != null) battery.start();
+        wake();                                   // also arms the clock
     }
 
     @Override protected void onPause() {
         super.onPause();
+        timer.removeCallbacks(startFade);
+        timer.removeCallbacks(goDark);
         if (tilt != null) tilt.stop();
         if (battery != null) battery.stop();
         if (web != null) web.onPause();
+    }
+
+    private void arm() {
+        timer.removeCallbacks(startFade);
+        timer.removeCallbacks(goDark);
+        int stay = Prefs.lockStay(this);
+        if (stay > 0) timer.postDelayed(startFade, stay * 1000L);
+    }
+
+    private void fadeOut() {
+        fading = true;
+        int fade = Math.max(1, Prefs.lockFade(this));
+        if (web != null) web.evaluateJavascript("window.__lock&&__lock.fade(" + fade + ")", null);
+        timer.postDelayed(goDark, fade * 1000L + 200);
+    }
+
+    private void dark() {
+        darkened = true;
+        if (tilt != null) tilt.stop();
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_OFF;   // the minimum
+        getWindow().setAttributes(lp);
+    }
+
+    private void wake() {
+        timer.removeCallbacks(startFade);
+        timer.removeCallbacks(goDark);
+        if ((fading || darkened) && web != null) {
+            web.evaluateJavascript("window.__lock&&__lock.wake()", null);
+        }
+        if (darkened && tilt != null) tilt.start();
+        fading = darkened = false;
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+        getWindow().setAttributes(lp);
+        arm();
     }
 
     @Override protected void onDestroy() {
@@ -72,6 +122,20 @@ public class LockScreenActivity extends Activity {
 
     /** A decisive upward swipe dismisses; anything else falls through to the watch. */
     @Override public boolean dispatchTouchEvent(MotionEvent e) {
+        if (e.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            if (fading || darkened) {
+                wake();                           // a touch in the dark only brings the watch back
+                swallow = true;
+            } else {
+                arm();                            // any touch restarts the clock
+                swallow = false;
+            }
+        }
+        if (swallow) {
+            int a = e.getActionMasked();
+            if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL) swallow = false;
+            return true;
+        }
         if (e.getPointerCount() > 1) return super.dispatchTouchEvent(e);   // leave pinches alone
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:

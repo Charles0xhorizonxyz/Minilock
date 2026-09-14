@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.49 on the phone; v0.0.50 built and archived but NOT installed** — wireless debugging on the phone switched off (port actively refused, phone answers pings). First job: have the user re-enable Wireless debugging, find the new port with `adb mdns services`, install v0.0.50 and test the Text size ladder (#72 in `docs/CORRECTIONS.md`). Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.49 on the phone; v0.0.50 and v0.0.51 built and archived but NOT installed** — wireless debugging on the phone switched off (port actively refused, phone answers pings). First job: have the user re-enable Wireless debugging, find the new port with `adb mdns services`, install v0.0.51 and test the Text size ladder (#72) and the lock screen's stay/fade clock (#74) in `docs/CORRECTIONS.md`. The clock lives in `LockScreenActivity` (arm/fadeOut/dark/wake, a Handler) and the page's `__lock.fade(s)`/`__lock.wake()` (a `#nightfall` veil; `dark` skips rendering in the loop wrapper); set "Watch stays on for" to 15 s and "Fade to black over" to 3 s, stage the lock screen, wait, and screenshot: the veil should be black after ~18 s and `dumpsys window` should show the keep-screen-on flag gone; a tap should bring the watch back. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
