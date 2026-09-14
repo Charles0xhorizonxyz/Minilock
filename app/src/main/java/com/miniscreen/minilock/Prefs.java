@@ -24,6 +24,10 @@ final class Prefs {
     static void setBackground(Context c, int v) {
         get(c).edit().putInt("bg", v).putString("design", "custom").apply();
     }
+    /** The 3D pocket watch, or the flat dial (no WebGL, no gyroscope, lighter on the battery). */
+    static boolean threeD(Context c) { return get(c).getBoolean("threeD", true); }
+    /** Whether the watch holds still in the world as the phone moves. */
+    static boolean gyro(Context c) { return get(c).getBoolean("gyro", true); }
     /** Text size of the app screen: a ten-step ladder, 0 to 9; step 4 is the design size. */
     static int textStep(Context c) { return get(c).getInt("text_step", 4); }
     static void setTextStep(Context c, int v) { get(c).edit().putInt("text_step", v).apply(); }

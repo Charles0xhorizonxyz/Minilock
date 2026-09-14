@@ -181,6 +181,9 @@ window.__lock={
     if(haveBase) retarget();
   },
   face(){ return Math.cos(theta); },  // 1 dial toward you, -1 caseback; for tests from adb
+  gyroReset(){                        // gyroscope switched off: back to head-on, re-baseline when it returns
+    haveBase=false; qWanted.identity(); qSmooth.identity();
+  },
   fade(seconds){                      // the lock screen's night: the watch dims to black, then rests
     let veil=document.getElementById("nightfall");
     if(!veil){ veil=document.createElement("div"); veil.id="nightfall"; document.body.appendChild(veil); }

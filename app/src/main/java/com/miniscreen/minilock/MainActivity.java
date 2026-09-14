@@ -97,14 +97,22 @@ public class MainActivity extends Activity {
         subtitle.setGravity(Gravity.CENTER);
         add(subtitle, 26);
 
-        // The watch itself, in 3D. Tilt the phone and the light moves across the gold.
-        hero = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); });
+        // The watch itself. In 3D, tilt the phone and the light moves across the gold; the flat
+        // dial is the same view the screensaver draws, with no WebGL and no gyroscope.
         int width = (int) (getResources().getDisplayMetrics().widthPixels
                 / getResources().getDisplayMetrics().density);
-        add(hero, Math.min(560, (int) (width * 1.45f)));   // tall enough for the dial to be legible
-        hero.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
-        tilt = new TiltBridge(this, hero);
-        battery = new BatteryBridge(this, hero);
+        int heroHeight = Math.min(560, (int) (width * 1.45f));   // tall enough for the dial to be legible
+        if (Prefs.threeD(this)) {
+            hero = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); });
+            add(hero, heroHeight);
+            hero.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
+            tilt = new TiltBridge(this, hero);
+            battery = new BatteryBridge(this, hero);
+        } else {
+            WatchView flat = new WatchView(this);
+            flat.setExhibition(true);
+            add(flat, heroHeight);
+        }
 
         // Right under the watch: the background scale and the reset, so a wrong colour or a
         // wrong placement is put right where you can see it change.
@@ -127,6 +135,23 @@ public class MainActivity extends Activity {
         preview.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
 
         textSize();
+        Switch threeD = row("3D watch", "Off: the flat dial, no 3D, no gyroscope, lighter on the battery");
+        threeD.setChecked(Prefs.threeD(this));
+        threeD.setOnCheckedChangeListener((v, on) -> {
+            Prefs.get(this).edit().putBoolean("threeD", on).apply();
+            recreate();                                    // the watch view is built once, in onCreate
+        });
+        Switch gyro = row("Gyroscope", "The watch holds still in the world as the phone moves");
+        gyro.setChecked(Prefs.gyro(this));
+        gyro.setOnCheckedChangeListener((v, on) -> {
+            Prefs.get(this).edit().putBoolean("gyro", on).apply();
+            if (tilt == null) return;
+            if (on) tilt.start();
+            else {
+                tilt.stop();
+                if (hero != null) hero.evaluateJavascript("window.__lock&&__lock.gyroReset()", null);
+            }
+        });
         design = dropdown("Design",
                 "Factory: the watch as designed. Custom: your caseback and background choices",
                 new String[] {"Factory", "Custom"}, new String[] {"factory", "custom"},
@@ -475,7 +500,7 @@ public class MainActivity extends Activity {
         if (design != null) design.setSelection(Prefs.factory(this) ? 0 : 1, false);
         refreshing = false;
         if (hero != null) hero.onResume();
-        if (tilt != null) tilt.start();
+        if (tilt != null && Prefs.gyro(this)) tilt.start();
         if (battery != null) battery.start();
         // only run the watcher while it is both wanted and permitted
         if (Prefs.lock(this) && Settings.canDrawOverlays(this)) LockService.start(this);

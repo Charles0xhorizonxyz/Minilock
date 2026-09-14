@@ -17,6 +17,13 @@ public class PreviewActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (!Prefs.threeD(this)) {                // the flat dial: no WebGL, no gyroscope, no bridges
+            WatchView flat = new WatchView(this);
+            flat.setExhibition(true);
+            setContentView(flat);
+            Watch3D.immersive(getWindow());
+            return;
+        }
         web = Watch3D.view(this, () -> {
             if (battery != null) battery.refresh();
             // Gyroscope readout. Nothing on this side can move the phone, so the page reports
@@ -34,7 +41,7 @@ public class PreviewActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         if (web != null) web.onResume();
-        if (tilt != null) tilt.start();
+        if (tilt != null && Prefs.gyro(this)) tilt.start();
         if (battery != null) battery.start();
     }
 
