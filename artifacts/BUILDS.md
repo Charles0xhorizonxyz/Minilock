@@ -30,6 +30,7 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.23-debug.apk` | 0.0.23 | 2026-09-14 03:01 | 250,832 B | `9196a856e271c996` | **Lock screen pinch fixed**: the page ran its own pinch handler which fought the native ScaleGestureDetector, both writing zoom on the same gesture. The native detector is now the only controller, on every surface. |
 | `Minilock-v0.0.24-debug.apk` | 0.0.24 | 2026-09-14 03:02 | 251,060 B | `b96a521b18710ff0` | "Reset watch size and position" in the app, so a bad saved placement is never permanent. Gesture hint updated. |
 | `Minilock-v0.0.25-debug.apk` | 0.0.25 | 2026-09-14 03:06 | 251,420 B | `bf17b2eda35f5ed2` | **Gyroscope rebuilt on quaternions**: Euler azimuth is degenerate for a phone held upright (gimbal lock), which is why the orbit kept collapsing to centre. The camera now takes the device orientation directly. **ZoomScrollView** stops the scroller claiming pinches and sideways drags, which is why zoom only worked over parts of the screen. |
+| `Minilock-v0.0.26-debug.apk` | 0.0.26 | 2026-09-14 03:15 | 252,412 B | `31baa96a893fc74b` | THE zoom fix: ZoomLayout now claims every DOWN. Before, a DOWN on plain text or empty background was not consumed, so dispatchTouchEvent returned false and this view was dropped from the whole gesture -- the second finger never arrived. That is why zoom only worked over some boxes. Also cancels children on the second finger, and shows a touch readout HUD. |
 
 ## Conventions
 

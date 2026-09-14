@@ -9,6 +9,7 @@ import android.view.ViewConfiguration;
 import android.view.ViewParent;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
+import java.util.function.Consumer;
 
 /**
  * Pinch-zoomable content, designed to sit INSIDE a ScrollView.
@@ -31,6 +32,8 @@ public class ZoomLayout extends FrameLayout {
     private float scale = 1f, panX = 0f;
     private float downX, downY, lastX;
     private int oneFinger;                       // 0 undecided, 1 panning sideways, 2 passed on
+    private boolean childrenCancelled;
+    private Consumer<String> debug;              // a readout, so the phone can say what it sees
 
     public ZoomLayout(Context context) {
         super(context);
@@ -102,6 +105,27 @@ public class ZoomLayout extends FrameLayout {
         canvas.restore();
     }
 
+    /** Route the touch state to a readout on screen. */
+    public void setDebug(Consumer<String> sink) { debug = sink; }
+
+    private void report(MotionEvent e) {
+        if (debug == null) return;
+        debug.accept(String.format(java.util.Locale.US,
+                "touch %s  fingers %d  scale %.2f  pan %.0f",
+                MotionEvent.actionToString(e.getActionMasked()).replace("ACTION_", ""),
+                e.getPointerCount(), scale, panX));
+    }
+
+    /** Tell whatever is under the first finger that the gesture is no longer its. */
+    private void cancelChildren(MotionEvent event) {
+        if (childrenCancelled) return;
+        childrenCancelled = true;
+        MotionEvent cancel = MotionEvent.obtain(event);
+        cancel.setAction(MotionEvent.ACTION_CANCEL);
+        super.dispatchTouchEvent(cancel);
+        cancel.recycle();
+    }
+
     private void holdGesture(boolean hold) {
         ViewParent parent = getParent();
         if (parent != null) parent.requestDisallowInterceptTouchEvent(hold);
@@ -111,9 +135,15 @@ public class ZoomLayout extends FrameLayout {
         // The ScrollView is our parent now, and it will claim a pinch as a scroll the moment
         // one finger drifts vertically -- we would then get a CANCEL and the zoom would never
         // happen. Take the gesture as soon as a second finger lands.
-        switch (event.getActionMasked()) {
+        int action = event.getActionMasked();
+        report(event);
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+                childrenCancelled = false;
+                break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 holdGesture(true);
+                cancelChildren(event);   // or a Switch under finger one toggles on the final UP
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
@@ -126,6 +156,7 @@ public class ZoomLayout extends FrameLayout {
         detector.onTouchEvent(event);
 
         if (event.getPointerCount() >= 2) return true;   // two fingers belong to the zoom
+        if (childrenCancelled) return true;              // the rest of this gesture is ours too
 
         if (scale > 1f) {
             switch (event.getActionMasked()) {
@@ -160,13 +191,20 @@ public class ZoomLayout extends FrameLayout {
             }
         }
 
-        if (scale == 1f && panX == 0f) return super.dispatchTouchEvent(event);
-
-        MotionEvent mapped = MotionEvent.obtain(event);
-        mapped.setLocation((event.getX() - panX) / scale, event.getY() / scale);
-        boolean handled = super.dispatchTouchEvent(mapped);
-        mapped.recycle();
-        return handled;
+        boolean handled;
+        if (scale == 1f && panX == 0f) {
+            handled = super.dispatchTouchEvent(event);
+        } else {
+            MotionEvent mapped = MotionEvent.obtain(event);
+            mapped.setLocation((event.getX() - panX) / scale, event.getY() / scale);
+            handled = super.dispatchTouchEvent(mapped);
+            mapped.recycle();
+        }
+        // THE fix. If nothing under the first finger consumes DOWN -- plain text, empty
+        // background -- returning false here drops this view from the whole gesture, and the
+        // second finger never arrives. Claim every DOWN; the ScrollView still intercepts
+        // vertical drags through onInterceptTouchEvent exactly as before.
+        return handled || action == MotionEvent.ACTION_DOWN;
     }
 
     public void reset() {

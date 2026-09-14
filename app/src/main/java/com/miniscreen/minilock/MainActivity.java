@@ -63,6 +63,13 @@ public class MainActivity extends Activity {
         TextView masthead = text("M I N I S C R E E N   ·   v" + version, 11, gold);
         masthead.setGravity(Gravity.CENTER);
         add(masthead, 28);
+        // Touch readout. adb cannot fake a pinch on this device, so the phone reports what it
+        // sees and you can read it back to me. Temporary.
+        TextView touch = text("touch —", 10, 0xFF6C7883);
+        touch.setGravity(Gravity.CENTER);
+        touch.setTypeface(Typeface.MONOSPACE);
+        add(touch, 18);
+        zoom.setDebug(line -> touch.post(() -> touch.setText(line)));
         TextView title = text("The art of passing time.", 28, 0xFFF1EDE5);
         title.setTypeface(Typeface.create("serif", Typeface.NORMAL));
         title.setGravity(Gravity.CENTER);
