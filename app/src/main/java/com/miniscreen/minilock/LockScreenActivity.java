@@ -19,6 +19,7 @@ public class LockScreenActivity extends Activity {
     static volatile boolean alive;
 
     private WebView web;
+    private Gestures.Torch torch;
     private TiltBridge tilt;
     private BatteryBridge battery;
     private float downX, downY;
@@ -31,7 +32,9 @@ public class LockScreenActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 27) setShowWhenLocked(true);
         else getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); }, this::unlock);
+        torch = new Gestures.Torch(this);
+        web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); },
+                gesture -> Gestures.perform(this, gesture, this::unlock, torch));
         setContentView(web);
         Watch3D.immersive(getWindow());   // after setContentView, or getInsetsController() is null
         tilt = new TiltBridge(this, web);
@@ -55,11 +58,12 @@ public class LockScreenActivity extends Activity {
 
     @Override protected void onDestroy() {
         alive = false;
+        if (torch != null) { torch.release(); torch = null; }
         if (web != null) { web.destroy(); web = null; }
         super.onDestroy();
     }
 
-    /** Leave: the page calls this for a leftward flick of the dial; the swipe up below too. */
+    /** Leave: a gesture set to Unlock lands here; so does the swipe up below. */
     private void unlock() {
         if (isFinishing()) return;
         finish();

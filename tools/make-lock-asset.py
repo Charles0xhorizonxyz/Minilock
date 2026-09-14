@@ -51,7 +51,7 @@ header,.panel,.notes,.stage>p,.readout{display:none!important}
 # registered by value so it cannot be wrapped afterwards. Drag still turns it.
 sub("  if(moved<5) windOver();                    // a tap winds it, a drag keeps its speed",
     "  if(moved<5 && e && e.type===\"pointerup\") tapBack(e);   // a tap on the caseback works its controls\n"
-    "  else if(e && e.type===\"pointerup\") maybeUnlock(e);         // a leftward flick of the dial unlocks")
+    "  else if(e && e.type===\"pointerup\") maybeGesture(e);        // a flick of the dial is a gesture")
 sub("function release(){", "function release(e){")
 
 # The plate on the caseback had a "Set as screensaver" button that only ever changed its own
@@ -179,6 +179,7 @@ window.__lock={
            testOffset=new THREE.Quaternion().setFromEuler(eul); }
     if(haveBase) retarget();
   },
+  face(){ return Math.cos(theta); },  // 1 dial toward you, -1 caseback; for tests from adb
   setDebug(on){                       // what the gyroscope delivers, in words; preview only
     if(on && !hud){ hud=document.createElement("div"); hud.id="gyrohud"; document.body.appendChild(hud); }
     if(hud) hud.style.display = on ? "block" : "none";
@@ -292,14 +293,20 @@ function applyCamera(){
 // there when the ring was hit, so the turn never starts.
 const bowPos=new THREE.Vector3();
 let carrying=false, carryX=0, carryY=0;
-/* ---- the lock screen's own gesture: flick the dial to the left and it unlocks ---- */
-// Only from the front, only a decisive leftward drag, and never when carrying by the ring
-// (that path never reaches release). Turning it to the right still opens the settings.
-let swipeX0=0, swipeY0=0, swipeT0=0, frontAtDown=true;
-function maybeUnlock(e){
-  const dx=e.clientX-swipeX0, dy=e.clientY-swipeY0;
-  if(frontAtDown && dx<-innerWidth*0.22 && Math.abs(dx)>1.5*Math.abs(dy)
-     && performance.now()-swipeT0<1000 && window.minilock && minilock.unlock) minilock.unlock();
+/* ---- the lock screen's gestures: flicks of the dial, named here, acted on by the app ---- */
+// A flick is a decisive horizontal drag: more than a fifth of the width, mostly sideways, under
+// a second. "left1" is one flick right-to-left from the front (the caseback keeps its taps).
+// "right2" is two flicks left-to-right within a second and a half, whichever face. Carrying by
+// the ring never reaches release, so it never counts. What each does is the user's choice, in
+// the app; the page only names them.
+let swipeX0=0, swipeY0=0, swipeT0=0, frontAtDown=true, rightFlicks=0, lastRightAt=-1e9;
+function maybeGesture(e){
+  const dx=e.clientX-swipeX0, dy=e.clientY-swipeY0, now=performance.now();
+  if(Math.abs(dx)<innerWidth*0.22 || Math.abs(dx)<1.5*Math.abs(dy) || now-swipeT0>1000) return;
+  const fire=g=>{ if(window.minilock && minilock.gesture) minilock.gesture(g); };
+  if(dx<0){ rightFlicks=0; if(frontAtDown) fire("left1"); return; }
+  rightFlicks = (now-lastRightAt<1500) ? rightFlicks+1 : 1; lastRightAt=now;
+  if(rightFlicks>=2){ rightFlicks=0; fire("right2"); }
 }
 function overBow(e){
   bowPos.set(0,1.452,0).applyMatrix4(spin.matrixWorld).project(camera);

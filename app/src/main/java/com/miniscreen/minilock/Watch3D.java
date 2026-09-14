@@ -27,8 +27,9 @@ final class Watch3D {
 
     static WebView view(Context context, Runnable onReady) { return view(context, onReady, null); }
 
-    /** onUnlock: what a leftward flick of the dial does; only the lock screen passes one. */
-    static WebView view(Context context, Runnable onReady, Runnable onUnlock) {
+    /** onGesture: receives "left1" or "right2" from the page; only the lock screen passes one. */
+    static WebView view(Context context, Runnable onReady,
+                        java.util.function.Consumer<String> onGesture) {
         WebView web = new WebView(context);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -46,7 +47,7 @@ final class Watch3D {
         // The page cannot read preferences, so apply them once it exists.
         // The page saves the caseback plate (finish, movement, counter) through this. Only
         // annotated methods are reachable, and the page is a bundled asset that loads nothing.
-        web.addJavascriptInterface(new PlateStore(context, onUnlock), "minilock");
+        web.addJavascriptInterface(new PlateStore(context, onGesture), "minilock");
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView v, String url) {
                 applyCard(v);
@@ -63,10 +64,10 @@ final class Watch3D {
     /** What the page hands over when the plate changes; called off the main thread. */
     static final class PlateStore {
         private final Context context;
-        private final Runnable onUnlock;
-        PlateStore(Context context, Runnable onUnlock) {
+        private final java.util.function.Consumer<String> onGesture;
+        PlateStore(Context context, java.util.function.Consumer<String> onGesture) {
             this.context = context.getApplicationContext();
-            this.onUnlock = onUnlock;
+            this.onGesture = onGesture;
         }
         @android.webkit.JavascriptInterface
         public void put(String key, String value) {
@@ -74,11 +75,12 @@ final class Watch3D {
                 Prefs.setPlate(context, value);
             }
         }
-        /** The page decided a leftward flick of the dial happened; the lock screen may go. */
+        /** The page recognised a flick of the dial ("left1" or "right2"); the app acts on it. */
         @android.webkit.JavascriptInterface
-        public void unlock() {
-            if (onUnlock != null) {
-                new android.os.Handler(android.os.Looper.getMainLooper()).post(onUnlock);
+        public void gesture(String name) {
+            if (onGesture != null && name != null && name.length() < 20) {
+                new android.os.Handler(android.os.Looper.getMainLooper())
+                        .post(() -> onGesture.accept(name));
             }
         }
     }

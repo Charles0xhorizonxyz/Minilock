@@ -19,8 +19,27 @@ import urllib.request
 import websocket
 
 ADB = os.path.expanduser("~/AppData/Local/Android/Sdk/platform-tools/adb.exe")
-DEVICE = "192.168.1.51:46683"
 PORT = 9222
+
+
+def find_device():
+    """The phone's wireless-debugging address changes; take MINILOCK_DEVICE, else ask mDNS."""
+    fixed = os.environ.get("MINILOCK_DEVICE")
+    if fixed:
+        return fixed
+    out = subprocess.run([ADB, "mdns", "services"], capture_output=True, text=True, timeout=20).stdout
+    for line in out.splitlines():
+        if "_adb-tls-connect._tcp" in line:
+            addr = line.split()[-1]
+            subprocess.run([ADB, "connect", addr], capture_output=True, text=True, timeout=25)
+            ident = subprocess.run([ADB, "-s", addr, "shell", "getprop", "ro.build.display.id"],
+                                   capture_output=True, text=True).stdout.strip()
+            if ident == "2026091001":          # the GrapheneOS phone, never the emulator
+                return addr
+    sys.exit("the GrapheneOS phone is not advertising wireless debugging on this network")
+
+
+DEVICE = find_device()
 
 
 def adb(*args):

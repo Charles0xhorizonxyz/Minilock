@@ -13,7 +13,11 @@ import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.SeekBar;
+import android.widget.Spinner;
+import android.view.ViewGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -116,6 +120,8 @@ public class MainActivity extends Activity {
         toggle("Sweeping seconds", "A fluid, mechanical rhythm", "sweep", Prefs.sweep(this));
         toggle("Stand-in lock screen", "The 3D watch when the screen wakes", "lock",
                 Prefs.lock(this));
+        choice("Flick right to left", "One turn of the dial on the lock screen", Gestures.LEFT1);
+        choice("Flick left to right, twice", "Two turns of the dial on the lock screen", Gestures.RIGHT2);
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
                 Prefs.card(this));
         screensaver();
@@ -191,6 +197,56 @@ public class MainActivity extends Activity {
             Prefs.get(this).edit().putBoolean(key, on).apply();
             if ("card".equals(key)) Watch3D.applyCard(hero);   // no need to wait for a reload
         });
+    }
+
+    /** A settings row with a dropdown of lock-screen actions on the right. */
+    private void choice(String title, String desc, String prefKey) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(15), 0, dp(10));
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        labels.addView(text(title, 16, 0xFFE7E4DF));
+        TextView description = text(desc, 12, muted);
+        description.setPadding(0, dp(5), 0, 0);
+        labels.addView(description);
+        row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+
+        Spinner pick = new Spinner(this);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, Gestures.NAMES) {
+            @Override public View getView(int pos, View convert, ViewGroup parent) {
+                TextView t = (TextView) super.getView(pos, convert, parent);
+                t.setText(Gestures.NAMES[pos] + "  \u25BE");
+                t.setTextColor(gold);
+                t.setTextSize(14);
+                t.setGravity(Gravity.END);
+                return t;
+            }
+            @Override public View getDropDownView(int pos, View convert, ViewGroup parent) {
+                TextView t = (TextView) super.getDropDownView(pos, convert, parent);
+                t.setTextColor(0xFFE7E4DF);
+                t.setTextSize(15);
+                t.setPadding(dp(18), dp(14), dp(18), dp(14));
+                return t;
+            }
+        };
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        pick.setAdapter(adapter);
+        pick.setBackground(null);                          // the text carries its own arrow
+        pick.setPopupBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0xFF131921));
+        pick.setSelection(Gestures.indexOf(Prefs.gesture(this, prefKey, Gestures.defaultFor(prefKey))));
+        pick.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                Prefs.setGesture(MainActivity.this, prefKey, Gestures.KEYS[pos]);
+            }
+            @Override public void onNothingSelected(AdapterView<?> p) { }
+        });
+        row.addView(pick, new LinearLayout.LayoutParams(-2, -2));
+        add(row, -2);
+        View line = new View(this);
+        line.setBackgroundColor(0xFF252A30);
+        content.addView(line, new LinearLayout.LayoutParams(-1, dp(1)));
     }
 
     /** A settings row with a switch on the right; the caller decides what the switch does. */

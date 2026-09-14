@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.41 on the phone; v0.0.42 built and archived but NOT installed** — the phone dropped off wireless adb (no ping reply) before it could be deployed. First job: reconnect (`adb connect 192.168.1.51:46683`; the port may have changed, ask the user), install v0.0.42, and run the tests below for #65 and #66 in `docs/CORRECTIONS.md`. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.44**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -34,7 +34,11 @@ wordmark is MINISCREEN; the only surviving mentions are historical changelog row
 ## Absolute rules (the user set these; do not break them)
 
 1. **Deploy only to the GrapheneOS phone, never the emulator.** An emulator is often connected
-   at the same time. **Always** pass `-s 192.168.1.51:46683` to every adb call. The phone is a
+   at the same time. **Always** pass `-s <the phone's address>` to every adb call. The address
+   is wireless debugging and it CHANGES (it was `192.168.1.51:46683`, then `192.168.1.208:40685`
+   on 2026-09-14): find it with `adb mdns services` (the `_adb-tls-connect._tcp` entry), connect,
+   and confirm `ro.build.display.id` is `2026091001` before doing anything. If the phone does
+   not answer pings, it is off the network; ask the user. The phone is a
    Pixel 7 (`panther`) running GrapheneOS — identify it by `ro.build.display.id`, and call it
    "the GrapheneOS phone", never "the Pixel".
 2. **Keep every build.** Copy each APK to `artifacts/Minilock-v<version>-debug.apk` and add a
@@ -49,7 +53,7 @@ wordmark is MINISCREEN; the only surviving mentions are historical changelog row
 
 ```bash
 ADB="$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe"
-D="192.168.1.51:46683"
+D="192.168.1.208:40685"     # changes; see rule 1
 
 # 1. bump versionCode and versionName in app/build.gradle
 # 2. if you changed tools/watch3d.html or the generator, regenerate the asset:
@@ -81,11 +85,18 @@ screen lock to None. Currently the real lock is off and the stand-in is on. Sinc
 watch is **staged on SCREEN_OFF** (it exists, paused, while the phone sleeps) so it is in front
 the instant the screen wakes and never launches after the system's double-tap-power camera;
 SCREEN_ON only launches it if nothing was staged. `input keyevent KEYCODE_POWER KEYCODE_POWER`
-reproduces the camera gesture from adb. Since v0.0.42 a decisive right-to-left flick of the
-dial unlocks (the page's `maybeUnlock` calls `minilock.unlock()`; `Watch3D.view` takes an
-`onUnlock` runnable that only `LockScreenActivity` passes); `input swipe 850 1200 250 1200 250`
-should leave the lock screen, `input swipe 250 1200 850 1200 250` should turn the watch over
-and stay. Swipe up still dismisses.
+reproduces the camera gesture from adb. Since v0.0.42/44 flicks of the dial are gestures: the
+page's `maybeGesture` names them ("left1": one flick right to left from the front; "right2":
+two flicks left to right within 1.5 s) and calls `minilock.gesture(name)`; `Watch3D.view`
+takes an `onGesture` consumer that only `LockScreenActivity` passes, and `Gestures.perform`
+runs the user's choice from Prefs `g_left1`/`g_right2` (defaults unlock / camera; options none,
+unlock, camera, torch, app, alarms; two dropdown rows in the app). `__lock.face()` returns cos
+of the turn angle (1 dial, -1 caseback) so a test can check the face first. Real `input swipe`
+flicks work but collide with the user's fingers; the reliable test dispatches synthetic pointer
+events inside the page with in-page `setTimeout` timing (a flick must finish within 1 s, the
+two flicks within 1.5 s, which round-trips through page-eval cannot do). Swipe up still
+dismisses. `BootReceiver` also restarts the service on `MY_PACKAGE_REPLACED`, so the watch is
+staged straight after an install.
 
 ### Testing from this side: what adb can and cannot do
 
@@ -251,10 +262,11 @@ confirmed on-device (dial matched the phone's percent).
 | `ZoomScrollView.java` | ScrollView subclass that does not intercept pinches or, when zoomed, sideways drags. |
 | `LockScreenActivity.java` | Stand-in lock screen. `showWhenLocked`, swipe-up to dismiss. |
 | `LockService.java` | Foreground service; stages the lock screen on `ACTION_SCREEN_OFF` (fallback on `SCREEN_ON` when none is alive) so it never launches over the camera gesture. Needs `SYSTEM_ALERT_WINDOW`. |
+| `Gestures.java` | The lock screen's flick actions: the option list shared with the app's dropdowns, `perform()`, and a torch helper that tracks the real flash state. |
 | `WatchView.java` | The OLD flat 2D Canvas dial. Used by screensaver + wallpaper only. |
 | `tools/watch3d.html` | The 3D watch source (also a standalone browser artifact). |
 | `tools/make-lock-asset.py` | Transforms `watch3d.html` → `app/src/main/assets/lock.html`: bundles three.js, adds the viewport meta, strips page chrome, wraps the render loop with `applyCamera()` (the inner function must not be named `loop`, see item 1), adds the `window.__lock` bridge (`setQuat/setZoom/nudge/setCard/setBattery/setPlacement/testTurn/setDebug`). **Edit the watch here, then regenerate — never hand-edit `lock.html`.** |
-| `tools/page-eval.py` | Evaluates a JavaScript expression in the live WebView pages over DevTools. The verification channel that did not exist before v0.0.28. |
+| `tools/page-eval.py` | Evaluates a JavaScript expression in the live WebView pages over DevTools. Finds the phone by mDNS and checks its build id (or takes `MINILOCK_DEVICE`). The verification channel that did not exist before v0.0.28. |
 | `tools/probe-carry.js` | Synthetic-pointer test of the ring carry, for `page-eval.py`. Template for testing any one-finger gesture without the screen. |
 
 The JS↔native bridge is `window.__lock`. Native calls it via
