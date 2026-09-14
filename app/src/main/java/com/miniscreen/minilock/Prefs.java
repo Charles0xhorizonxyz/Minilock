@@ -10,6 +10,9 @@ final class Prefs {
     static boolean sweep(Context c) { return get(c).getBoolean("sweep", true); }
     static boolean lock(Context c) { return get(c).getBoolean("lock", false); }
     static boolean card(Context c) { return get(c).getBoolean("card", true); }
+    /** The studio behind the watch: 0 is the dark studio, 100 is white. */
+    static int background(Context c) { return get(c).getInt("bg", 0); }
+    static void setBackground(Context c, int v) { get(c).edit().putInt("bg", v).apply(); }
     /** Where the user parked the watch: "zoom,x,y". */
     static String placement(Context c) { return get(c).getString("place", ""); }
     static void setPlacement(Context c, String v) { get(c).edit().putString("place", v).apply(); }

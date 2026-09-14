@@ -499,11 +499,11 @@ function drawCard(g,F,d,rows){
   let y=66;
   for(const [label,val,text] of rows){
     txt(g,label,-12,y,8.5,rgba(F.gold,.85),false,"right",.20);
-    txt(g,val&&text?val+"   "+text:(val||text),12,y,12.5,"#C6CED6",true,"left");
+    txt(g,val&&text?val+"   "+text:(val||text),12,y,12.5,bgWhite>0.5?"#2A2F36":"#C6CED6",true,"left");
     y+=27;
   }
   txt(g,Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g," ").toUpperCase(),
-      0,y+6,9,"#6C7883",false,"center",.16);
+      0,y+6,9,bgWhite>0.5?"#6E7680":"#6C7883",false,"center",.16);
 }
 
 /* =========================================================
@@ -616,13 +616,17 @@ const camera=new THREE.PerspectiveCamera(26,1,0.1,100);
 camera.position.set(0,-0.15,9.2);
 camera.lookAt(0,-0.15,0);
 
-function backdropTex(){
+function backdropTex(white){
   const c=document.createElement("canvas"); c.width=c.height=512;
   const g=c.getContext("2d");
-  g.fillStyle="#040507"; g.fillRect(0,0,512,512);
+  const w=Math.max(0,Math.min(1,white||0));
+  const grey=v=>{ const h=Math.round(Math.max(0,Math.min(1,v))*255).toString(16).padStart(2,"0"); return "#"+h+h+h; };
+  const stop=(lift,sink)=> w ? grey(w+(1-w)*lift-w*w*sink) : null;
+  const c0=stop(.16,0)||"#2B313A", c1=stop(.08,.02)||"#171B21", c2=stop(.03,.05)||"#0B0D11", c3=stop(0,.08)||"#040507";
+  g.fillStyle=c3; g.fillRect(0,0,512,512);
   const rg=g.createRadialGradient(250,196,10,256,250,320);
-  rg.addColorStop(0,"#2B313A"); rg.addColorStop(.38,"#171B21");
-  rg.addColorStop(.72,"#0B0D11"); rg.addColorStop(1,"#040507");
+  rg.addColorStop(0,c0); rg.addColorStop(.38,c1);
+  rg.addColorStop(.72,c2); rg.addColorStop(1,c3);
   g.fillStyle=rg; g.fillRect(0,0,512,512);
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
 }
@@ -893,7 +897,8 @@ function fitCamera(aspect){
 /* ---- gyroscope: the phone moves, the watch and the room do not ---- */
 const qDevice=new THREE.Quaternion(), qBase=new THREE.Quaternion(),
       qWanted=new THREE.Quaternion(), qSmooth=new THREE.Quaternion(),
-      camBack=new THREE.Vector3();
+      camBack=new THREE.Vector3(), camRight=new THREE.Vector3(), camUp=new THREE.Vector3();
+var bgWhite=0;                        // 0 = the dark studio, 1 = white; a user setting
 let haveBase=false, lastSpin=0;
 let hud=null, hudAt=0, samples=0, testOffset=null;
 function retarget(){                  // where the camera should be, relative to where it started
@@ -952,6 +957,16 @@ window.__lock={
   },
   placement(){ return zoom+","+userX+","+userY; },
   setPlacement(z,x,y){ zoom=z; userX=x; userY=y; },
+  setBackground(white){               // the scale from white to black, behind the watch
+    bgWhite=Math.max(0,Math.min(1,+white||0));
+    const m=backdrop.material; if(m.map) m.map.dispose();
+    m.map=backdropTex(bgWhite); m.needsUpdate=true;
+    const v=Math.round((bgWhite-bgWhite*bgWhite*0.08)*255);   // the backdrop's edge grey
+    const css=bgWhite?"rgb("+v+","+v+","+v+")":"#000";
+    document.body.style.background=css;
+    const screen=document.getElementById("screen"); if(screen) screen.style.background=css;
+    cardAt=-1e9;                      // repaint the text under the watch in the right ink
+  },
   setBattery(pct,charging){           // the real charge, from BatteryManager
     state.batt=Math.max(0,Math.min(100,Math.round(pct)));
     state.charging=!!charging;
@@ -973,14 +988,50 @@ function applyCamera(){
   // it from the fitted distance meant zooming in kept a far-view offset and threw the watch
   // clean off the top of the frame.
   const t=Math.tan(camera.fov*Math.PI/360);
-  const lookY=-0.15-(2*d*t)*cardFrac/2+userY;
+  const cardLift=(2*d*t)*cardFrac/2;
   // The watch is a fixed object and the phone IS the camera: give the camera the device's
   // orientation, then stand it off by d along its own backward axis. The watch therefore stays
   // dead centre while you walk right around it, with no pole to tip over.
   camera.quaternion.copy(qSmooth);
   camBack.set(0,0,1).applyQuaternion(qSmooth).multiplyScalar(d);
-  camera.position.set(userX,lookY,0).add(camBack);
+  // Placement is a SCREEN offset: the user parks the watch somewhere on the glass and it must
+  // stay there while the phone turns. So offset along the camera's own right and up, not
+  // along world X and Y.
+  camRight.set(1,0,0).applyQuaternion(qSmooth);
+  camUp.set(0,1,0).applyQuaternion(qSmooth);
+  camera.position.set(0,-0.15,0).add(camBack)
+      .addScaledVector(camRight,userX).addScaledVector(camUp,userY-cardLift);
 }
+/* ---- carry: take the watch by its ring and put it anywhere on the screen ---- */
+// One finger on the bow moves the watch; one finger anywhere else still turns it over. These
+// run in the capture phase, before the turn handlers on the same canvas, and stop the event
+// there when the ring was hit, so the turn never starts.
+const bowPos=new THREE.Vector3();
+let carrying=false, carryX=0, carryY=0;
+function overBow(e){
+  bowPos.set(0,1.452,0).applyMatrix4(spin.matrixWorld).project(camera);
+  const r=glCanvas.getBoundingClientRect();
+  const sx=r.left+(bowPos.x*.5+.5)*r.width, sy=r.top+(-bowPos.y*.5+.5)*r.height;
+  const reach=Math.max(30,r.width*0.10);   // a fingertip, not a cursor
+  return Math.hypot(e.clientX-sx,e.clientY-sy)<reach;
+}
+glCanvas.addEventListener("pointerdown",e=>{
+  if(!e.isPrimary){ carrying=false; return; }   // a second finger hands over to placement
+  if(!overBow(e)) return;
+  carrying=true; carryX=e.clientX; carryY=e.clientY; dragging=false;
+  glCanvas.setPointerCapture(e.pointerId);
+  e.stopImmediatePropagation();
+},{capture:true});
+glCanvas.addEventListener("pointermove",e=>{
+  if(!carrying||!e.isPrimary) return;
+  window.__lock.nudge(e.clientX-carryX,e.clientY-carryY);
+  carryX=e.clientX; carryY=e.clientY;
+  e.stopImmediatePropagation();
+},{capture:true});
+function putDown(e){ if(!carrying) return; carrying=false; e.stopImmediatePropagation(); }
+glCanvas.addEventListener("pointerup",putDown,{capture:true});
+glCanvas.addEventListener("pointercancel",putDown,{capture:true});
+
 const _rawLoop=loop;
 loop=function(now){ applyCamera(); _rawLoop(now); };
 

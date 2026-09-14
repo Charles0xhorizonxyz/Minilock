@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.28**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.29**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -100,7 +100,9 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 45 | Zoom only worked over parts of the app; no sideways pan | Done — v0.0.25. The ScrollView was claiming the gesture wherever it decided first |
 | 46 | Gyroscope still minimal and recentres | **Superseded** — v0.0.25 blamed gimbal lock. The orbit code had never run at all (see the camera pass above), and the quaternion axis map it introduced turned yaw into roll. |
 | 47 | Try the full gyroscope | **Check** — v0.0.28. Two bugs fixed: the camera pass never ran, and the axis map `(x,z,-y)` conjugated the rotation so a turn about the screen's vertical axis became a roll about the viewing axis. Verified from adb with pretend turns (`__lock.testTurn`): yaw shows the case from the side, pitch goes over the top, roll spins it flat. **Unverified:** that the real sensor's sign convention matches — needs your hands. A readout in the fullscreen preview shows what the sensor delivers. |
-| 48 | Watch stuck in the bottom-right corner (v0.0.28) | **Open, yours to clear** — Prefs holds a placement (zoom 0.93, camera X −0.75, camera Y +2.22) saved by an accidental two-finger gesture while nothing rendered. Now that the camera pass runs it applies on every surface. Tap **"Reset watch size and position"** in the app. I did not clear it for you. |
+| 48 | Watch stuck in the bottom-right corner (v0.0.28) | **Cleared by you** — a placement saved by accident while nothing rendered applied once the camera pass ran. The stored placement has changed several times since, by your own pinches, so it is yours now. |
+| 49 | Background colours on a scale from white to black | **Done and verified** — v0.0.29. A slider in the app, white on the left, black on the right; it repaints the studio behind the watch on every surface and is remembered. Verified on the phone: the slider wrote the value, the app page and the stand-in lock screen took the light grey, and dragging it back restored the dark studio. The text under the watch switches to dark ink on light backgrounds (not checked: your card is off). |
+| 50 | Grab it by the ring and move it anywhere on the screen | **Done, verified in the page** — v0.0.29. One finger on the ring carries the watch; one finger on the dial still turns it over; the placement is saved when the finger lifts. Verified with synthetic pointer events in the live page: a 100 px drag from the ring moved the placement by exactly the expected amount, a drag on the dial did not. Not verified with a real finger, and not on the in-app hero, where a vertical drag may still be taken by the page scroll. Placement is now a screen offset, so a parked watch stays put while the phone turns. |
 
 ---
 

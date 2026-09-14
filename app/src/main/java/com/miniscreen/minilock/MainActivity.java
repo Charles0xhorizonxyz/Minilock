@@ -13,6 +13,7 @@ import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -91,7 +92,7 @@ public class MainActivity extends Activity {
         edition.setLetterSpacing(.15f);
         edition.setGravity(Gravity.CENTER);
         add(edition, 26);
-        TextView turn = text("Pinch to zoom · two fingers to place the watch · drag it to turn it over", 12, muted);
+        TextView turn = text("Pinch to size it · drag the ring to place it · drag the dial to turn it over", 12, muted);
         turn.setGravity(Gravity.CENTER);
         add(turn, 24);
 
@@ -102,6 +103,7 @@ public class MainActivity extends Activity {
                 Prefs.lock(this));
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
                 Prefs.card(this));
+        background();
 
         TextView resetWatch = text("Reset watch size and position", 14, gold);
         resetWatch.setPadding(0, dp(16), 0, 0);
@@ -172,6 +174,47 @@ public class MainActivity extends Activity {
         });
         row.addView(control, new LinearLayout.LayoutParams(dp(52), dp(48)));
         add(row, -2);
+        View line = new View(this);
+        line.setBackgroundColor(0xFF252A30);
+        content.addView(line, new LinearLayout.LayoutParams(-1, dp(1)));
+    }
+
+    /** A scale from white to black for the studio behind the watch, on every surface. */
+    private void background() {
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        labels.setPadding(0, dp(15), 0, dp(4));
+        labels.addView(text("Background", 16, 0xFFE7E4DF));
+        TextView description = text("From white to black, behind the watch everywhere", 12, muted);
+        description.setPadding(0, dp(5), 0, 0);
+        labels.addView(description);
+        add(labels, -2);
+
+        SeekBar scale = new SeekBar(this);
+        scale.setMax(100);
+        GradientDrawable track = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[] {0xFFFFFFFF, 0xFF000000});
+        track.setCornerRadius(dp(4));
+        track.setSize(dp(200), dp(8));
+        track.setStroke(dp(1), 0xFF3A424B);            // so the black end still has an edge
+        scale.setProgressDrawable(track);
+        if (android.os.Build.VERSION.SDK_INT >= 29) {
+            scale.setMinHeight(dp(8));
+            scale.setMaxHeight(dp(8));
+        }
+        scale.setThumbTintList(android.content.res.ColorStateList.valueOf(gold));
+        scale.setPadding(dp(14), dp(12), dp(14), dp(12));   // room for the thumb at both ends
+        scale.setProgress(100 - Prefs.background(this));     // white on the left, black on the right
+        scale.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
+                if (!fromUser) return;
+                Prefs.setBackground(MainActivity.this, 100 - p);
+                Watch3D.applyBackground(hero);              // live, so you see it as you slide
+            }
+            @Override public void onStartTrackingTouch(SeekBar s) { }
+            @Override public void onStopTrackingTouch(SeekBar s) { }
+        });
+        add(scale, 44);
         View line = new View(this);
         line.setBackgroundColor(0xFF252A30);
         content.addView(line, new LinearLayout.LayoutParams(-1, dp(1)));

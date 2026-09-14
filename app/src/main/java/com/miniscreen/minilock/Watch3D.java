@@ -19,7 +19,7 @@ import android.webkit.ValueCallback;
  * from assets. three.js is bundled, so nothing is fetched and the app holds no INTERNET
  * permission.
  *
- * Pinch zooms, double tap returns to the fitted framing, horizontal drag turns the watch over.
+ * Pinch sizes it, a finger on the ring carries it anywhere, a finger on the dial turns it over.
  */
 final class Watch3D {
 
@@ -44,6 +44,7 @@ final class Watch3D {
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView v, String url) {
                 applyCard(v);
+                applyBackground(v);
                 restorePlacement(v);
                 if (onReady != null) onReady.run();      // state pushed before this was lost
             }
@@ -72,6 +73,13 @@ final class Watch3D {
                 Prefs.setPlacement(web.getContext(), v);
             }
         });
+    }
+
+    /** Paint the studio behind the watch the grey the user chose. */
+    static void applyBackground(WebView web) {
+        if (web == null) return;
+        web.evaluateJavascript("window.__lock&&__lock.setBackground("
+                + (Prefs.background(web.getContext()) / 100f) + ")", null);
     }
 
     /** Show or hide the line of text under the watch, following the user's setting. */
@@ -122,7 +130,9 @@ final class Watch3D {
                 lastFocusY[0] = fy;
                 panning[0] = true;
             } else {
-                if (panning[0]) savePlacement(web);       // gesture over: remember the placement
+                // Gesture over: remember the placement. Two fingers may have moved it, and so
+                // may one finger carrying it by the ring, which only the page can tell.
+                if (panning[0] || e.getActionMasked() == MotionEvent.ACTION_UP) savePlacement(web);
                 panning[0] = false;
             }
             detector.onTouchEvent(e);

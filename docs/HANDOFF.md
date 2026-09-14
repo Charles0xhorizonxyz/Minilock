@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.28**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.29**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -95,7 +95,12 @@ What you CAN do, which the earlier sessions could not:
   phone's own axes, held until `testTurn(null)`. Screenshot after about a second. This verifies
   the camera maths; it cannot verify the sensor's sign convention.
 - **Drive zoom and placement:** `__lock.setZoom(z)` (camera distance multiplier, 0.42–2.4)
-  and `__lock.nudge(dx, dy)` in pixels.
+  and `__lock.nudge(dx, dy)` in pixels. `__lock.setBackground(0..1)` paints the studio.
+- **Test a one-finger gesture without touching the screen:** dispatch synthetic pointer events
+  in the page. `python tools/page-eval.py "$(cat tools/probe-carry.js)"` does this for the
+  ring carry, restoring the placement in the same tick so nothing renders or saves. Read the
+  header of that file for the two quirks (setPointerCapture throws for synthetic pointers; the
+  module's own variables are not reachable from the evaluator).
 - **Read what the sensor delivers:** the fullscreen preview shows a readout under the top edge,
   `gyro #<samples>  yaw  pitch  roll` (Euler YXZ of the orientation relative to the start, in
   degrees; `TEST` while a pretend turn is active). The app screen has the touch readout
@@ -115,6 +120,8 @@ Practical gotchas that cost time:
 - `uiautomator dump /data/local/tmp/ui.xml` finds a button's bounds by its text.
 - The preview is not orientation-locked. Turning the phone to landscape recreates the activity,
   reloads the page and takes a new gyro baseline. Keep it portrait during gyro tests, or lock it.
+- While the user is handling the phone, adb gestures land in their session and confuse both of
+  you. Prefer the in-page probes above; save screen gestures for when the phone is on the desk.
 
 ---
 
@@ -166,7 +173,20 @@ the bottom-right corner of the hero, the preview and the lock screen. The user s
 app data; the previous session was called out for that. Note the sign: `userX/userY` move the
 CAMERA, so the watch goes the other way.
 
-### 4. "Edges cut off" (root cause found; framing never exercised)
+### 4. Background scale and carry by the ring (v0.0.29)
+
+Both shipped in v0.0.29. **Background**: a `SeekBar` in the app (white left, black right) writes
+Prefs `bg` (0 = the dark studio, 100 = white); `Watch3D.applyBackground` pushes it on page load
+and live while sliding; `__lock.setBackground` regenerates the backdrop texture with the same
+vignette in neutral grey and repaints the card text in dark ink above 50. Verified on the phone.
+**Carry**: capture-phase pointer listeners on the canvas hit-test the bow (local `(0, 1.452, 0)`
+projected to the screen, reach `max(30px, 10% of width)`), call `__lock.nudge` per move, and
+stop the event so the turn handler never starts; a second finger hands over to the native
+two-finger placement. Native saves the placement on every `ACTION_UP` in `enablePinch`.
+Verified in the page with synthetic events; **not yet with a real finger**. Placement is now a
+screen-space offset (camera right/up), so it survives the gyroscope orbit.
+
+### 5. "Edges cut off" (root cause found; framing never exercised)
 
 Root cause is item 1. After the reset, check the framing on the preview: the whole case with
 the bow should fit with a margin. If it does not, the fit constants `NEED_W`/`NEED_H` in the
@@ -196,6 +216,7 @@ confirmed on-device (dial matched the phone's percent).
 | `tools/watch3d.html` | The 3D watch source (also a standalone browser artifact). |
 | `tools/make-lock-asset.py` | Transforms `watch3d.html` → `app/src/main/assets/lock.html`: bundles three.js, adds the viewport meta, strips page chrome, wraps the render loop with `applyCamera()` (the inner function must not be named `loop`, see item 1), adds the `window.__lock` bridge (`setQuat/setZoom/nudge/setCard/setBattery/setPlacement/testTurn/setDebug`). **Edit the watch here, then regenerate — never hand-edit `lock.html`.** |
 | `tools/page-eval.py` | Evaluates a JavaScript expression in the live WebView pages over DevTools. The verification channel that did not exist before v0.0.28. |
+| `tools/probe-carry.js` | Synthetic-pointer test of the ring carry, for `page-eval.py`. Template for testing any one-finger gesture without the screen. |
 
 The JS↔native bridge is `window.__lock`. Native calls it via
 `web.evaluateJavascript("window.__lock&&__lock.xxx(...)", null)`.
