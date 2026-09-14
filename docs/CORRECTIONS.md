@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.41**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.41** on the phone; **v0.0.42** built, not yet installed.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -117,6 +117,8 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 62 | Make the whole Screensaver row open the phone's screensaver settings | **Done and verified** — v0.0.38. Tapping the label opened Android's screensaver page. |
 | 63 | The background colours look artificial; make them natural | **Done and verified** — v0.0.39. The pure spectrum hues are replaced by eight seamless-paper tones in the same order (ivory, rose clay, ochre, sage, teal grey, slate blue, plum, charcoal), interpolated on the page and painted on the slider's track alike. Seen on the phone at sage, rose clay and ivory. v0.0.40 also makes the studio wall follow the camera, so a tilt no longer shows its edge cutting across the corner, which the light tones had made obvious. |
 | 64 | Make "Allow display over other apps" a toggle like the others | **Done and verified** — v0.0.41. The switch mirrors the real permission state and the whole row opens the phone's permission page, the same way the Screensaver row does; both refresh when you come back. Verified: reads ON, matching the phone, and tapping the row opened the system page. |
+| 65 | "Reset to default" should reset only the watch position, not the colours | **Built, not yet on the phone** — v0.0.42. The button now clears the saved size and position and reloads the watch; the background is left alone. The phone dropped off wireless adb before the build could be installed. |
+| 66 | Unlock by spinning the watch right to left; settings only left to right | **Built, not yet on the phone** — v0.0.42. On the stand-in lock screen a decisive right-to-left flick of the dial (more than about a fifth of the screen width, mostly horizontal, under a second) unlocks; left-to-right still turns the watch over to the settings. Only from the front face, and never when carrying by the ring. The page decides and calls the app through `minilock.unlock()`, which only the lock screen wires. Swipe-up still works too. Unverified: the phone was unreachable. |
 
 ---
 

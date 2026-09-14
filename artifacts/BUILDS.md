@@ -46,6 +46,7 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.39-debug.apk` | 0.0.39 | 2026-09-14 11:15 | 259,712 B | `751d7cc40cb442cb` | Natural background tones: the spectrum hues are replaced by eight seamless-paper stops (ivory, rose clay, ochre, sage, teal grey, slate blue, plum, charcoal), interpolated on the page and drawn on the slider's track alike. Same slider, same stored value. |
 | `Minilock-v0.0.40-debug.apk` | 0.0.40 | 2026-09-14 11:16 | 259,812 B | `302341ca6b71d70a` | The studio wall follows the camera (square-on, six units behind the watch), so the gyroscope orbit never shows its edge. |
 | `Minilock-v0.0.41-debug.apk` | 0.0.41 | 2026-09-14 11:23 | 260,380 B | `f7d277a59af91e96` | "Allow display over other apps" becomes a switch like the others: it mirrors the real permission state and the whole row opens the phone's permission page. Screensaver and overlay now share one mirrored-switch helper. Layout only. |
+| `Minilock-v0.0.42-debug.apk` | 0.0.42 | 2026-09-14 20:02 | 260,976 B | `8268651f702632a2` | The stand-in lock screen unlocks on a decisive right-to-left flick of the dial (front face only, never when carrying by the ring); left-to-right still turns it over to the settings. The page decides and calls `minilock.unlock()`, which only the lock screen wires. "Reset to default" now resets size and position only, leaving the background colour alone. **Built but not installed**: the phone dropped off wireless adb before deployment. |
 
 ## Conventions
 

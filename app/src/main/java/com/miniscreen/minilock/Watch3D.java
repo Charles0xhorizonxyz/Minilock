@@ -25,7 +25,10 @@ final class Watch3D {
 
     private Watch3D() { }
 
-    static WebView view(Context context, Runnable onReady) {
+    static WebView view(Context context, Runnable onReady) { return view(context, onReady, null); }
+
+    /** onUnlock: what a leftward flick of the dial does; only the lock screen passes one. */
+    static WebView view(Context context, Runnable onReady, Runnable onUnlock) {
         WebView web = new WebView(context);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -43,7 +46,7 @@ final class Watch3D {
         // The page cannot read preferences, so apply them once it exists.
         // The page saves the caseback plate (finish, movement, counter) through this. Only
         // annotated methods are reachable, and the page is a bundled asset that loads nothing.
-        web.addJavascriptInterface(new PlateStore(context), "minilock");
+        web.addJavascriptInterface(new PlateStore(context, onUnlock), "minilock");
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView v, String url) {
                 applyCard(v);
@@ -60,11 +63,22 @@ final class Watch3D {
     /** What the page hands over when the plate changes; called off the main thread. */
     static final class PlateStore {
         private final Context context;
-        PlateStore(Context context) { this.context = context.getApplicationContext(); }
+        private final Runnable onUnlock;
+        PlateStore(Context context, Runnable onUnlock) {
+            this.context = context.getApplicationContext();
+            this.onUnlock = onUnlock;
+        }
         @android.webkit.JavascriptInterface
         public void put(String key, String value) {
             if ("plate".equals(key) && value != null && value.length() < 2000) {
                 Prefs.setPlate(context, value);
+            }
+        }
+        /** The page decided a leftward flick of the dial happened; the lock screen may go. */
+        @android.webkit.JavascriptInterface
+        public void unlock() {
+            if (onUnlock != null) {
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(onUnlock);
             }
         }
     }

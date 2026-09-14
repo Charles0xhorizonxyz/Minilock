@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.41**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.41 on the phone; v0.0.42 built and archived but NOT installed** — the phone dropped off wireless adb (no ping reply) before it could be deployed. First job: reconnect (`adb connect 192.168.1.51:46683`; the port may have changed, ask the user), install v0.0.42, and run the tests below for #65 and #66 in `docs/CORRECTIONS.md`. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -81,7 +81,11 @@ screen lock to None. Currently the real lock is off and the stand-in is on. Sinc
 watch is **staged on SCREEN_OFF** (it exists, paused, while the phone sleeps) so it is in front
 the instant the screen wakes and never launches after the system's double-tap-power camera;
 SCREEN_ON only launches it if nothing was staged. `input keyevent KEYCODE_POWER KEYCODE_POWER`
-reproduces the camera gesture from adb.
+reproduces the camera gesture from adb. Since v0.0.42 a decisive right-to-left flick of the
+dial unlocks (the page's `maybeUnlock` calls `minilock.unlock()`; `Watch3D.view` takes an
+`onUnlock` runnable that only `LockScreenActivity` passes); `input swipe 850 1200 250 1200 250`
+should leave the lock screen, `input swipe 250 1200 850 1200 250` should turn the watch over
+and stay. Swipe up still dismisses.
 
 ### Testing from this side: what adb can and cannot do
 

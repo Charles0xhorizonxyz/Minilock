@@ -50,7 +50,8 @@ header,.panel,.notes,.stage>p,.readout{display:none!important}
 # A tap must not turn the watch over: it collides with double-tap-to-zoom, and the handler is
 # registered by value so it cannot be wrapped afterwards. Drag still turns it.
 sub("  if(moved<5) windOver();                    // a tap winds it, a drag keeps its speed",
-    "  if(moved<5 && e && e.type===\"pointerup\") tapBack(e);   // a tap on the caseback works its controls")
+    "  if(moved<5 && e && e.type===\"pointerup\") tapBack(e);   // a tap on the caseback works its controls\n"
+    "  else if(e && e.type===\"pointerup\") maybeUnlock(e);         // a leftward flick of the dial unlocks")
 sub("function release(){", "function release(e){")
 
 # The plate on the caseback had a "Set as screensaver" button that only ever changed its own
@@ -291,6 +292,15 @@ function applyCamera(){
 // there when the ring was hit, so the turn never starts.
 const bowPos=new THREE.Vector3();
 let carrying=false, carryX=0, carryY=0;
+/* ---- the lock screen's own gesture: flick the dial to the left and it unlocks ---- */
+// Only from the front, only a decisive leftward drag, and never when carrying by the ring
+// (that path never reaches release). Turning it to the right still opens the settings.
+let swipeX0=0, swipeY0=0, swipeT0=0, frontAtDown=true;
+function maybeUnlock(e){
+  const dx=e.clientX-swipeX0, dy=e.clientY-swipeY0;
+  if(frontAtDown && dx<-innerWidth*0.22 && Math.abs(dx)>1.5*Math.abs(dy)
+     && performance.now()-swipeT0<1000 && window.minilock && minilock.unlock) minilock.unlock();
+}
 function overBow(e){
   bowPos.set(0,1.452,0).applyMatrix4(spin.matrixWorld).project(camera);
   const r=glCanvas.getBoundingClientRect();
@@ -300,6 +310,7 @@ function overBow(e){
 }
 glCanvas.addEventListener("pointerdown",e=>{
   if(!e.isPrimary){ carrying=false; return; }   // a second finger hands over to placement
+  swipeX0=e.clientX; swipeY0=e.clientY; swipeT0=performance.now(); frontAtDown=Math.cos(theta)>0.5;
   if(!overBow(e)) return;
   carrying=true; carryX=e.clientX; carryY=e.clientY; dragging=false;
   glCanvas.setPointerCapture(e.pointerId);

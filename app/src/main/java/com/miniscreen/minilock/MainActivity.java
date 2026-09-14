@@ -100,10 +100,8 @@ public class MainActivity extends Activity {
         margin(reset, 18, 0);
         reset.getLayoutParams().height = dp(48);
         reset.setOnClickListener(v -> {
-            Prefs.setPlacement(this, "");          // a bad placement would otherwise be permanent
-            Prefs.setBackground(this, 0);          // the dark studio
-            if (scale != null) scale.setProgress(100);   // not from the user, so no write
-            if (hero != null) hero.reload();             // reads both back from prefs
+            Prefs.setPlacement(this, "");          // size and position only; colours are yours
+            if (hero != null) hero.reload();
         });
 
         TextView preview = text("Preview fullscreen   ↗", 14, ink);

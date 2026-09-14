@@ -31,7 +31,7 @@ public class LockScreenActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 27) setShowWhenLocked(true);
         else getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); });
+        web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); }, this::unlock);
         setContentView(web);
         Watch3D.immersive(getWindow());   // after setContentView, or getInsetsController() is null
         tilt = new TiltBridge(this, web);
@@ -57,6 +57,13 @@ public class LockScreenActivity extends Activity {
         alive = false;
         if (web != null) { web.destroy(); web = null; }
         super.onDestroy();
+    }
+
+    /** Leave: the page calls this for a leftward flick of the dial; the swipe up below too. */
+    private void unlock() {
+        if (isFinishing()) return;
+        finish();
+        overridePendingTransition(0, android.R.anim.fade_out);
     }
 
     /** A decisive upward swipe dismisses; anything else falls through to the watch. */
