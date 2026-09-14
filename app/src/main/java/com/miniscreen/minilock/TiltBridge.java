@@ -16,17 +16,14 @@ import android.webkit.WebView;
  */
 final class TiltBridge implements SensorEventListener {
 
-    /** Flip either if the tilt reads inverted on a given device. */
-    private static final float PITCH_SIGN = -1f, YAW_SIGN = -1f;
-    /** Radians of change before it is worth crossing into JavaScript. */
-    private static final float EPSILON = 0.003f;
+    /** Quaternion change before it is worth crossing into JavaScript. */
+    private static final float EPSILON = 0.002f;
 
     private final SensorManager sensors;
     private final Sensor rotation;
     private final WebView web;
-    private final float[] matrix = new float[9], orientation = new float[3];
-    private boolean haveBaseline;
-    private float basePitch, previousYaw, turned, sentPitch = 9f, sentYaw = 9f;
+    private final float[] quaternion = new float[4];
+    private float sentW = 9f, sentX = 9f, sentY = 9f, sentZ = 9f;
 
     TiltBridge(Context context, WebView web) {
         this.web = web;
@@ -41,9 +38,7 @@ final class TiltBridge implements SensorEventListener {
 
     /** Whatever way the phone is pointing when this starts becomes head-on. */
     void start() {
-        haveBaseline = false;
-        turned = 0f;
-        sentPitch = sentYaw = 9f;
+        sentW = sentX = sentY = sentZ = 9f;
         if (sensors != null && rotation != null) {
             sensors.registerListener(this, rotation, SensorManager.SENSOR_DELAY_GAME);
         }
@@ -56,26 +51,17 @@ final class TiltBridge implements SensorEventListener {
 
     @Override public void onSensorChanged(SensorEvent e) {
         if (web == null) return;
-        SensorManager.getRotationMatrixFromVector(matrix, e.values);
-        SensorManager.getOrientation(matrix, orientation);
-        float yaw = orientation[0], pitch = orientation[1];
-        if (!haveBaseline) { basePitch = pitch; previousYaw = yaw; haveBaseline = true; }
-
-        // Unwrap: azimuth jumps between +pi and -pi, and a raw delta there would snap the
-        // camera right round. Accumulating the short way keeps the orbit continuous, so you
-        // can keep turning past 360 degrees and it never resets.
-        float step = yaw - previousYaw;
-        if (step > Math.PI) step -= 2f * (float) Math.PI;
-        if (step < -Math.PI) step += 2f * (float) Math.PI;
-        turned += step;
-        previousYaw = yaw;
-
-        float dp = PITCH_SIGN * (pitch - basePitch);
-        float dy = YAW_SIGN * turned;
-        if (Math.abs(dp - sentPitch) < EPSILON && Math.abs(dy - sentYaw) < EPSILON) return;
-        sentPitch = dp;
-        sentYaw = dy;
-        web.evaluateJavascript("window.__lock&&__lock.setTilt(" + dp + "," + dy + ")", null);
+        // Send the quaternion straight through. Converting to Euler angles here was the bug:
+        // a phone held upright sits on the gimbal-lock singularity, so azimuth went degenerate
+        // and the orbit kept collapsing back to centre.
+        SensorManager.getQuaternionFromVector(quaternion, e.values);   // [w, x, y, z]
+        float w = quaternion[0], x = quaternion[1], y = quaternion[2], z = quaternion[3];
+        float moved = Math.abs(w - sentW) + Math.abs(x - sentX)
+                + Math.abs(y - sentY) + Math.abs(z - sentZ);
+        if (moved < EPSILON) return;
+        sentW = w; sentX = x; sentY = y; sentZ = z;
+        web.evaluateJavascript("window.__lock&&__lock.setQuat("
+                + w + "," + x + "," + y + "," + z + ")", null);
     }
 
     @Override public void onAccuracyChanged(Sensor sensor, int accuracy) { }

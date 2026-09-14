@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        ScrollView scroll = new ScrollView(this);
+        ZoomScrollView scroll = new ZoomScrollView(this);
         scroll.setFillViewport(true);
         scroll.setVerticalScrollBarEnabled(false);      // no scrollbar over the watch
         scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -44,6 +44,7 @@ public class MainActivity extends Activity {
         zoom = new ZoomLayout(this);
         zoom.addView(content, new FrameLayout.LayoutParams(-1, -2));
         scroll.addView(zoom);
+        scroll.setZoomLayout(zoom);   // so it knows not to claim pinches or sideways drags
         setContentView(scroll);
         scroll.setOnApplyWindowInsetsListener((v, insets) -> {
             if (android.os.Build.VERSION.SDK_INT >= 30) {

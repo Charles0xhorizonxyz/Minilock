@@ -889,18 +889,23 @@ function fitCamera(aspect){
 }
 
 /* ---- gyroscope: the phone moves, the watch and the room do not ---- */
-let tiltX=0, tiltY=0, wantX=0, wantY=0;
+const qDevice=new THREE.Quaternion(), qBase=new THREE.Quaternion(),
+      qWanted=new THREE.Quaternion(), qSmooth=new THREE.Quaternion(),
+      camBack=new THREE.Vector3();
+let haveBase=false, lastSpin=0;
 window.__lock={
-  setTilt(px,py){
-    // Unclamped: py accumulates continuously, so turning the phone right round walks the
-    // camera a full 360 degrees and you see the caseback. Only pitch is limited, and only to
-    // stop it tipping over the pole where the up vector flips.
-    const nx=Math.max(-1.30,Math.min(1.30,px));
-    const ny=py;
-    // lateral movement drives the bow spring the flip physics already runs, so the watch
-    // rocks and settles like something with mass hanging from its ring
-    vphi += -Math.max(-0.5,Math.min(0.5,(ny-wantY)))*2.6;
-    wantX=nx; wantY=ny;
+  setQuat(w,x,y,z){
+    // Euler angles were the wrong tool: a phone held upright to look at the screen sits right
+    // on the gimbal-lock singularity, where azimuth goes degenerate and collapses back. A
+    // quaternion has no singularity, so the orbit is genuinely free in every direction.
+    // Android's sensor frame is X east, Y north, Z up; three.js is X right, Y up, Z toward the
+    // viewer -- hence the axis swap.
+    qDevice.set(x, z, -y, w);
+    if(!haveBase){ qBase.copy(qDevice).invert(); haveBase=true; qSmooth.copy(qDevice); }
+    qWanted.copy(qDevice).premultiply(qBase);
+    const spin = 2*Math.acos(Math.min(1,Math.abs(qWanted.w)));
+    vphi += -Math.max(-0.5,Math.min(0.5,(spin-lastSpin)))*2.2;   // motion rocks it on its bow
+    lastSpin = spin;
   },
   setCard(on){                        // the line of text under the watch is a user setting
     const card=document.querySelector(".cardwrap");
@@ -924,27 +929,24 @@ window.__lock={
     state.batt=Math.max(0,Math.min(100,Math.round(pct)));
     state.charging=!!charging;
   },
-  recentre(){ wantX=wantY=0; }
 };
 function applyCamera(){
   // Orbit the CAMERA rather than rotating the scene: the watch and the studio stay fixed in
   // world space, so tilting sweeps the environment map across the gold the way it would across
   // real metal. Rotating the scene would carry the lights along and kill the effect.
-  tiltX+=(wantX-tiltX)*0.16;          // damped enough to feel like glass rather than jelly
-  tiltY+=(wantY-tiltY)*0.16;
+  qSmooth.slerp(qWanted, 0.22);       // damped enough to feel like glass rather than jelly
   const d=camFit*zoom;
   // The offset that makes room for the card must be derived from the CURRENT distance. Taking
   // it from the fitted distance meant zooming in kept a far-view offset and threw the watch
   // clean off the top of the frame.
   const t=Math.tan(camera.fov*Math.PI/360);
   const lookY=-0.15-(2*d*t)*cardFrac/2+userY;
-  // the watch is a fixed object; the camera walks around it
-  camera.position.set(
-    userX+Math.sin(tiltY)*Math.cos(tiltX)*d,
-    lookY+Math.sin(tiltX)*d,
-    Math.cos(tiltY)*Math.cos(tiltX)*d
-  );
-  camera.lookAt(userX,lookY,0);
+  // The watch is a fixed object and the phone IS the camera: give the camera the device's
+  // orientation, then stand it off by d along its own backward axis. The watch therefore stays
+  // dead centre while you walk right around it, with no pole to tip over.
+  camera.quaternion.copy(qSmooth);
+  camBack.set(0,0,1).applyQuaternion(qSmooth).multiplyScalar(d);
+  camera.position.set(userX,lookY,0).add(camBack);
 }
 const _rawLoop=loop;
 loop=function(now){ applyCamera(); _rawLoop(now); };

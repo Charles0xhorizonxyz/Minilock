@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.24**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.25**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -81,6 +81,8 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 42 | Size and place the watch freely rather than auto-fit | Done — v0.0.20/21. Pinch sizes, two-finger drag places, and it is remembered. **Unverified** |
 | 43 | Zooming in the app was lost | **Done and confirmed by you** — v0.0.22 |
 | 44 | Same zoom behaviour on the lock screen | Done — v0.0.23. Two pinch handlers were fighting; the native one is now the only controller. **Unverified** |
+| 45 | Zoom only worked over parts of the app; no sideways pan | Done — v0.0.25. The ScrollView was claiming the gesture wherever it decided first |
+| 46 | Gyroscope still minimal and recentres | Done — v0.0.25. The real cause was gimbal lock in the Euler azimuth, not the clamp. Rebuilt on quaternions. **Unverified** |
 
 ---
 
