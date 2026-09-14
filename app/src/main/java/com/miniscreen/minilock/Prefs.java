@@ -13,6 +13,9 @@ final class Prefs {
     /** The studio behind the watch: 0 is the dark studio, 100 is white. */
     static int background(Context c) { return get(c).getInt("bg", 0); }
     static void setBackground(Context c, int v) { get(c).edit().putInt("bg", v).apply(); }
+    /** The caseback plate as JSON: finish, movement toggles, counter at six. */
+    static String plate(Context c) { return get(c).getString("plate", ""); }
+    static void setPlate(Context c, String v) { get(c).edit().putString("plate", v).apply(); }
     /** Where the user parked the watch: "zoom,x,y". */
     static String placement(Context c) { return get(c).getString("place", ""); }
     static void setPlacement(Context c, String v) { get(c).edit().putString("place", v).apply(); }

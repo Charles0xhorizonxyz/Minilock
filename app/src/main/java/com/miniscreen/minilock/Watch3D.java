@@ -41,16 +41,40 @@ final class Watch3D {
         web.setHorizontalScrollBarEnabled(false);
         web.setVerticalScrollBarEnabled(false);
         // The page cannot read preferences, so apply them once it exists.
+        // The page saves the caseback plate (finish, movement, counter) through this. Only
+        // annotated methods are reachable, and the page is a bundled asset that loads nothing.
+        web.addJavascriptInterface(new PlateStore(context), "minilock");
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView v, String url) {
                 applyCard(v);
                 applyBackground(v);
                 restorePlacement(v);
+                restorePlate(v);
                 if (onReady != null) onReady.run();      // state pushed before this was lost
             }
         });
         web.loadUrl("file:///android_asset/lock.html");
         return web;
+    }
+
+    /** What the page hands over when the plate changes; called off the main thread. */
+    static final class PlateStore {
+        private final Context context;
+        PlateStore(Context context) { this.context = context.getApplicationContext(); }
+        @android.webkit.JavascriptInterface
+        public void put(String key, String value) {
+            if ("plate".equals(key) && value != null && value.length() < 2000) {
+                Prefs.setPlate(context, value);
+            }
+        }
+    }
+
+    /** Put the caseback plate back the way it was left: finish, movement toggles, counter. */
+    static void restorePlate(WebView web) {
+        String saved = Prefs.plate(web.getContext());
+        if (saved.isEmpty()) return;
+        web.evaluateJavascript("window.__lock&&__lock.setState("
+                + org.json.JSONObject.quote(saved) + ")", null);
     }
 
     /** Put the watch back where it was left. */

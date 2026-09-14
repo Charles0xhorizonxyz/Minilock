@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.29**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.30**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -103,6 +103,8 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 48 | Watch stuck in the bottom-right corner (v0.0.28) | **Cleared by you** — a placement saved by accident while nothing rendered applied once the camera pass ran. The stored placement has changed several times since, by your own pinches, so it is yours now. |
 | 49 | Background colours on a scale from white to black | **Done and verified** — v0.0.29. A slider in the app, white on the left, black on the right; it repaints the studio behind the watch on every surface and is remembered. Verified on the phone: the slider wrote the value, the app page and the stand-in lock screen took the light grey, and dragging it back restored the dark studio. The text under the watch switches to dark ink on light backgrounds (not checked: your card is off). |
 | 50 | Grab it by the ring and move it anywhere on the screen | **Done, verified in the page** — v0.0.29. One finger on the ring carries the watch; one finger on the dial still turns it over; the placement is saved when the finger lifts. Verified with synthetic pointer events in the live page: a 100 px drag from the ring moved the placement by exactly the expected amount, a drag on the dial did not. Not verified with a real finger, and not on the in-app hero, where a vertical drag may still be taken by the page scroll. Placement is now a screen offset, so a parked watch stays put while the phone turns. |
+| 51 | Remove "Set as screensaver" from the back of the watch | **Done and verified** — v0.0.30. Markup and wiring both gone; the app keeps the real one. Seen on the phone with the watch turned over. |
+| 52 | The watch colour and the background reset on unlock | **Done and verified for the colour; could not reproduce for the background** — v0.0.30. The colour (and the movement toggles and the counter) are chosen on the plate on the caseback, and nothing had ever saved that plate: it lived only in the page, so every new lock screen page started over. The page now hands the plate to the app through a `minilock` JavaScript interface on every change, and the app restores it on load. Verified: rose gold chosen in the app, sleep, wake, and the fresh lock screen page came back rose. The background was already restored from prefs on every load, and it also survived the same sleep-and-wake at a light grey. If it still resets for you, tell me the exact steps. |
 
 ---
 

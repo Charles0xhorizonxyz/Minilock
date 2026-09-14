@@ -51,6 +51,16 @@ header,.panel,.notes,.stage>p,.readout{display:none!important}
 sub("  if(moved<5) windOver();                    // a tap winds it, a drag keeps its speed",
     "  // a tap deliberately does nothing here: it collided with double-tap-to-zoom")
 
+# The plate on the caseback had a "Set as screensaver" button that only ever changed its own
+# label; the app has the real one. Gone, markup and wiring both.
+sub("""        <button type="button" class="act" id="setDream">Set as screensaver</button>
+""", "")
+sub("""document.getElementById("setDream").addEventListener("click",function(){
+  this.textContent="Opens Android settings"; this.disabled=true;
+  setTimeout(()=>{this.textContent="Set as screensaver";this.disabled=false;},2200);
+});
+""", "")
+
 # Make loop reassignable so the camera pass can wrap it. The inner function must NOT be named
 # `loop`: in a named function expression the name is bound to the function itself, so the
 # `requestAnimationFrame(loop)` inside the body re-scheduled the raw loop, and the wrapper --
@@ -127,6 +137,19 @@ const qDevice=new THREE.Quaternion(), qBase=new THREE.Quaternion(),
       qWanted=new THREE.Quaternion(), qSmooth=new THREE.Quaternion(),
       camBack=new THREE.Vector3(), camRight=new THREE.Vector3(), camUp=new THREE.Vector3();
 var bgWhite=0;                        // 0 = the dark studio, 1 = white; a user setting
+/* ---- the caseback plate is remembered ---- */
+// The page cannot write preferences, so it hands the plate's state to the app through the
+// `minilock` interface on every change, and the app gives it back with setState on load.
+let restoring=false;
+function persist(){
+  if(!window.minilock) return;        // the desktop artifact has no app behind it
+  minilock.put("plate", JSON.stringify({finish:state.finish,ambient:state.ambient,sweep:state.sweep,
+    bottom:state.bottom,weather:state.weather,alerts:state.alerts,alarm:state.alarm,event:state.event}));
+}
+{ const plate=document.getElementById("plate");
+  const later=()=>{ const r=restoring; setTimeout(()=>{ if(!r) persist(); },0); };
+  plate.addEventListener("click",later,true);
+  plate.addEventListener("change",later,true); }
 let haveBase=false, lastSpin=0;
 let hud=null, hudAt=0, samples=0, testOffset=null;
 function retarget(){                  // where the camera should be, relative to where it started
@@ -185,6 +208,21 @@ window.__lock={
   },
   placement(){ return zoom+","+userX+","+userY; },
   setPlacement(z,x,y){ zoom=z; userX=x; userY=y; },
+  setState(json){                     // the caseback plate, the way it was left last time
+    let s; try{ s=JSON.parse(json); }catch(e){ return; }
+    if(!s||typeof s!=="object") return;
+    restoring=true;
+    try{
+      if(s.finish!==undefined){ const b=document.querySelector('#finish button[data-i="'+s.finish+'"]'); if(b) b.click(); }
+      if(s.bottom!==undefined){ const b=document.querySelector('#bottom button[data-v="'+s.bottom+'"]'); if(b) b.click(); }
+      const flags={ambient:"mAmbient",sweep:"mSweep",weather:"mWeather",alerts:"mAlerts",alarm:"mAlarm",event:"mEvent"};
+      for(const k in flags){
+        if(s[k]===undefined) continue;
+        const el=document.getElementById(flags[k]);
+        if(el && el.checked!==!!s[k]){ el.checked=!!s[k]; el.dispatchEvent(new Event("change",{bubbles:true})); }
+      }
+    } finally { restoring=false; }
+  },
   setBackground(white){               // the scale from white to black, behind the watch
     bgWhite=Math.max(0,Math.min(1,+white||0));
     const m=backdrop.material; if(m.map) m.map.dispose();

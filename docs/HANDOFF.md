@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.29**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.30**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -186,7 +186,22 @@ two-finger placement. Native saves the placement on every `ACTION_UP` in `enable
 Verified in the page with synthetic events; **not yet with a real finger**. Placement is now a
 screen-space offset (camera right/up), so it survives the gyroscope orbit.
 
-### 5. "Edges cut off" (root cause found; framing never exercised)
+### 5. The caseback plate is remembered (v0.0.30)
+
+The plate on the back of the watch (finish, movement toggles, counter at six) used to live only
+in the page, so it reset with every new page — that was the user's "the colour is not kept". The
+page now calls `minilock.put("plate", json)` (a `@JavascriptInterface` object added in
+`Watch3D.view`) on any click or change inside `#plate`, and `Watch3D.restorePlate` pushes
+`__lock.setState(json)` on load, which drives the plate's own controls (clicks the swatch,
+dispatches `change` on the checkboxes) so the existing wiring applies it. Prefs key `plate`.
+Verified across a sleep and wake. The app's own Ambient/Sweep toggles still only affect the old
+flat dial; the 3D watch reads the plate. The "Set as screensaver" button on the plate is gone.
+
+**Seen while testing, not yet fixed:** with the gyroscope orbit live, a large turn shows the
+edge of the studio backdrop (an 18×18 plane at z=−6) with the page's flat colour beyond it. A
+backdrop that follows the camera direction, or a much larger one, would remove that.
+
+### 6. "Edges cut off" (root cause found; framing never exercised)
 
 Root cause is item 1. After the reset, check the framing on the preview: the whole case with
 the bow should fit with a margin. If it does not, the fit constants `NEED_W`/`NEED_H` in the
