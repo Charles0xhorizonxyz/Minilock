@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.49**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.49 on the phone; v0.0.50 built and archived but NOT installed** — wireless debugging on the phone switched off (port actively refused, phone answers pings). First job: have the user re-enable Wireless debugging, find the new port with `adb mdns services`, install v0.0.50 and test the Text size ladder (#72 in `docs/CORRECTIONS.md`). Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 

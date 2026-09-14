@@ -24,6 +24,9 @@ final class Prefs {
     static void setBackground(Context c, int v) {
         get(c).edit().putInt("bg", v).putString("design", "custom").apply();
     }
+    /** Text size of the app screen: a ten-step ladder, 0 to 9; step 4 is the design size. */
+    static int textStep(Context c) { return get(c).getInt("text_step", 4); }
+    static void setTextStep(Context c, int v) { get(c).edit().putInt("text_step", v).apply(); }
     /** What a flick of the dial does on the stand-in lock screen: see Gestures. */
     static String gesture(Context c, String key, String def) { return get(c).getString(key, def); }
     static void setGesture(Context c, String key, String v) { get(c).edit().putString(key, v).apply(); }

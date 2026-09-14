@@ -54,6 +54,7 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.47-debug.apk` | 0.0.47 | 2026-09-14 21:00 | 266,108 B | `64f59911a15ca938` | The text under the watch follows its own switch in both designs; Factory is only the gold, the dial and the studio, and the text switch no longer flips the design to Custom. |
 | `Minilock-v0.0.48-debug.apk` | 0.0.48 | 2026-09-14 21:05 | 266,608 B | `cb3bd0225e3828d6` | Dropdowns aligned right: the selected text ends flush with the switches' edge and the list opens with its right edge on that line. Layout only. |
 | `Minilock-v0.0.49-debug.apk` | 0.0.49 | 2026-09-14 21:08 | 266,248 B | `116b413c35aa5a0d` | Dropdown lists open as exactly the dropdown's own box (fixed 176dp, right-aligned text), so the list's right edge is the switches' edge; the v0.0.48 offset had been pushed to the screen edge and clipped. |
+| `Minilock-v0.0.50-debug.apk` | 0.0.50 | 2026-09-14 21:36 | 267,884 B | `d0705f2c18ec3fef` | Text size for the app screen: a ten-step ladder with A- and A+ at the top of the settings list, 7.5 percent per step from 0.7 to 1.375 of the design size, applied live to every title, description, button and dropdown, remembered (Prefs text_step). **Built but not installed**: wireless debugging on the phone went off before deployment. |
 
 ## Conventions
 

@@ -32,14 +32,24 @@ public class MainActivity extends Activity {
     private SeekBar scale;                // the background slider, so a reset can move it
     private Switch dream, overlay;        // mirror system settings the app cannot change itself
     private Spinner design;               // Factory or Custom; flips to Custom when anything is changed
+    private int textStep;                 // 0..9 on the ladder; 4 is the design size
+    private float textScale = 1f;
+    private final java.util.List<TextView> sized = new java.util.ArrayList<>();
+    private final java.util.List<ArrayAdapter<String>> adapters = new java.util.ArrayList<>();
+    private final View[] rungs = new View[10];
     private boolean refreshing;           // so a programmatic refresh is not taken as a tap
 
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + .5f);
     }
 
+    /** Step 4 is the design size; each step is 7.5 percent, from 0.7 to 1.375. */
+    private static float scaleFor(int step) { return 1f + (step - 4) * 0.075f; }
+
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        textStep = Math.max(0, Math.min(9, Prefs.textStep(this)));
+        textScale = scaleFor(textStep);
         ZoomScrollView scroll = new ZoomScrollView(this);
         scroll.setFillViewport(true);
         scroll.setVerticalScrollBarEnabled(false);      // no scrollbar over the watch
@@ -116,6 +126,7 @@ public class MainActivity extends Activity {
         preview.getLayoutParams().height = dp(52);
         preview.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
 
+        textSize();
         design = dropdown("Design",
                 "Factory: the watch as designed. Custom: your caseback and background choices",
                 new String[] {"Factory", "Custom"}, new String[] {"factory", "custom"},
@@ -243,7 +254,7 @@ public class MainActivity extends Activity {
                 TextView t = (TextView) super.getView(pos, convert, parent);
                 t.setText(names[pos] + "  \u25BE");
                 t.setTextColor(gold);
-                t.setTextSize(14);
+                t.setTextSize(14 * textScale);
                 t.setGravity(Gravity.END);
                 t.setPadding(dp(8), dp(4), 0, dp(4));       // flush with the switches' edge
                 return t;
@@ -251,12 +262,13 @@ public class MainActivity extends Activity {
             @Override public View getDropDownView(int pos, View convert, ViewGroup parent) {
                 TextView t = (TextView) super.getDropDownView(pos, convert, parent);
                 t.setTextColor(0xFFE7E4DF);
-                t.setTextSize(15);
+                t.setTextSize(15 * textScale);
                 t.setPadding(dp(18), dp(14), dp(18), dp(14));
                 return t;
             }
         };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        adapters.add(adapter);
         pick.setAdapter(adapter);
         pick.setBackground(null);                          // the text carries its own arrow
         pick.setPadding(0, 0, 0, 0);                       // the old background's padding stays otherwise
@@ -354,9 +366,70 @@ public class MainActivity extends Activity {
     private TextView text(String value, int size, int color) {
         TextView t = new TextView(this);
         t.setText(value);
-        t.setTextSize(size);
+        t.setTextSize(size * textScale);
+        t.setTag(size);                            // the design size, so a new scale can be applied
         t.setTextColor(color);
+        sized.add(t);
         return t;
+    }
+
+    /** A ten-step ladder with A- and A+ for every title, description and button on this screen. */
+    private void textSize() {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(15), 0, dp(10));
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        labels.addView(text("Text size", 16, 0xFFE7E4DF));
+        TextView description = text("Ten steps, for everything on this screen", 12, muted);
+        description.setPadding(0, dp(5), 0, 0);
+        labels.addView(description);
+        row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+
+        LinearLayout ladder = new LinearLayout(this);
+        ladder.setGravity(Gravity.CENTER_VERTICAL);
+        TextView minus = text("A\u2212", 16, gold);
+        minus.setPadding(dp(10), dp(8), dp(10), dp(8));
+        minus.setOnClickListener(v -> stepText(-1));
+        ladder.addView(minus);
+        LinearLayout bars = new LinearLayout(this);
+        bars.setGravity(Gravity.BOTTOM);
+        for (int i = 0; i < 10; i++) {
+            View rung = new View(this);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(5), dp(6 + i));
+            lp.setMargins(dp(1), 0, dp(1), 0);
+            bars.addView(rung, lp);
+            rungs[i] = rung;
+        }
+        ladder.addView(bars);
+        TextView plus = text("A+", 16, gold);
+        plus.setPadding(dp(10), dp(8), dp(10), dp(8));
+        plus.setOnClickListener(v -> stepText(1));
+        ladder.addView(plus);
+        row.addView(ladder, new LinearLayout.LayoutParams(-2, -2));
+        add(row, -2);
+        View line = new View(this);
+        line.setBackgroundColor(0xFF252A30);
+        content.addView(line, new LinearLayout.LayoutParams(-1, dp(1)));
+        paintLadder();
+    }
+
+    private void paintLadder() {
+        for (int i = 0; i < 10; i++) rungs[i].setBackgroundColor(i <= textStep ? gold : 0xFF3A424B);
+    }
+
+    private void stepText(int by) {
+        int next = Math.max(0, Math.min(9, textStep + by));
+        if (next == textStep) return;
+        textStep = next;
+        textScale = scaleFor(next);
+        Prefs.setTextStep(this, next);
+        for (TextView t : sized) {
+            Object base = t.getTag();
+            if (base instanceof Integer) t.setTextSize((Integer) base * textScale);
+        }
+        for (ArrayAdapter<String> a : adapters) a.notifyDataSetChanged();   // dropdowns re-read the scale
+        paintLadder();
     }
 
     private GradientDrawable background(int color, int stroke) {
