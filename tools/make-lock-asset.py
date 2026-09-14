@@ -83,6 +83,14 @@ sub("""  camera.aspect=r.width/r.height; camera.updateProjectionMatrix();
   setSens(r.width);
   return r;""")
 
+# 2D: the watch hangs from its ring and swings like a pendulum toward gravity. The rock spring
+# the watch already has on its bow becomes a softer, wider pendulum spring toward a target.
+sub("""    vphi += (-150*phi - 6.2*vphi)*h - drive;""",
+"""    if(flat) vphi += (-25*(phi-phiTarget) - 1.2*vphi)*h - drive*4;   // 2D: a pendulum toward gravity
+    else vphi += (-150*phi - 6.2*vphi)*h - drive;""")
+sub("""  phi=Math.max(-0.075,Math.min(0.075,phi));""",
+"""  { const lim=flat?1.3:0.075; phi=Math.max(-lim,Math.min(lim,phi)); }""")
+
 # The studio backdrop takes a whiteness. 0 keeps the dark blue-grey exactly as designed; anything
 # else is a neutral grey with the same vignette, darkening the corners a little on light
 # backgrounds so they still read as a backdrop and not as nothing.
@@ -139,7 +147,9 @@ function fitCamera(aspect){
 /* ---- gyroscope: the phone moves, the watch and the room do not ---- */
 const qDevice=new THREE.Quaternion(), qBase=new THREE.Quaternion(),
       qWanted=new THREE.Quaternion(), qSmooth=new THREE.Quaternion(),
-      camBack=new THREE.Vector3(), camRight=new THREE.Vector3(), camUp=new THREE.Vector3();
+      camBack=new THREE.Vector3(), camRight=new THREE.Vector3(), camUp=new THREE.Vector3(),
+      gDev=new THREE.Vector3(), qInv=new THREE.Quaternion();
+var phiTarget=0;                      // 2D: where gravity says the hanging watch should rest
 var bgWhite=0;                        // luminance of the chosen background; 0 for the dark studio
 // Seamless-paper tones, the way a studio backdrop actually comes: ivory, rose clay, ochre,
 // sage, teal grey, slate blue, plum, charcoal. Same order as a spectrum, none of its neon.
@@ -166,10 +176,15 @@ function persist(){
   plate.addEventListener("change",later,true); }
 let haveBase=false, lastSpin=0;
 let hud=null, hudAt=0, samples=0, testOffset=null, dark=false, darkTimer=0, flat=false;
-const qFlat=new THREE.Quaternion();  // 2D: the orbit clamped to the front of the wall
+const qFlat=new THREE.Quaternion();  // identity: in 2D the camera never leaves head-on
 function retarget(){                  // where the camera should be, relative to where it started
   qWanted.copy(qDevice);
   if(testOffset) qWanted.multiply(testOffset);   // a local turn, as if the hand had made it
+  // Gravity on the screen, from the absolute orientation (real or pretend): the 2D pendulum
+  // hangs toward it. Phone upright: straight down. Phone flat on a table: no preference.
+  gDev.set(0,0,-1).applyQuaternion(qInv.copy(qWanted).invert());
+  const inPlane=Math.hypot(gDev.x,gDev.y);
+  phiTarget = -Math.atan2(gDev.x,-gDev.y) * Math.min(1, inPlane*1.5);
   qWanted.premultiply(qBase);
 }
 const eul=new THREE.Euler();
@@ -182,13 +197,11 @@ window.__lock={
     if(haveBase) retarget();
   },
   face(){ return Math.cos(theta); },  // 1 dial toward you, -1 caseback; for tests from adb
-  setFlat(on){                        // 2D: the same watch with its back on the studio wall
-    // The gyroscope works exactly as in 3D, but the watch lies on the wall: you can look at it
-    // from an angle, never from behind, and the wall and the watch move together. The wall is
-    // fixed in the world here (in 3D it follows the camera), so it is made bigger to keep its
-    // edge out of an oblique view.
+  setFlat(on){                        // 2D: the camera never moves; the watch is a pendulum
+    // The gyroscope no longer orbits the camera. Instead the watch hangs from its ring and
+    // swings toward gravity as the phone tilts, in the plane of the screen, and any motion
+    // gives it a push. 3D is the full orbit.
     flat=!!on;
-    backdrop.scale.setScalar(flat ? 2.4 : 1);
   },
   gyroReset(){                        // gyroscope switched off: back to head-on, re-baseline when it returns
     haveBase=false; qWanted.identity(); qSmooth.identity();
@@ -299,13 +312,7 @@ function applyCamera(){
   // The watch is a fixed object and the phone IS the camera: give the camera the device's
   // orientation, then stand it off by d along its own backward axis. The watch therefore stays
   // dead centre while you walk right around it, with no pole to tip over.
-  let q=qSmooth;
-  if(flat){                           // on the wall: clamp the orbit to the front, 65 degrees each way
-    eul.setFromQuaternion(qSmooth,"YXZ");
-    const L=65*Math.PI/180;
-    eul.y=Math.max(-L,Math.min(L,eul.y)); eul.x=Math.max(-L,Math.min(L,eul.x));
-    qFlat.setFromEuler(eul); q=qFlat;
-  }
+  const q = flat ? qFlat : qSmooth;   // 2D: head-on, always; the pendulum does the moving
   camera.quaternion.copy(q);
   camBack.set(0,0,1).applyQuaternion(q).multiplyScalar(d);
   // Placement is a SCREEN offset: the user parks the watch somewhere on the glass and it must
@@ -315,11 +322,10 @@ function applyCamera(){
   camUp.set(0,1,0).applyQuaternion(q);
   camera.position.set(0,-0.15,0).add(camBack)
       .addScaledVector(camRight,userX).addScaledVector(camUp,userY-cardLift);
-  // In 3D the studio wall follows the camera: always square-on, six units behind the watch as
-  // it was built, so no orbit or tilt ever reaches its edge. In 2D it is fixed in the world,
-  // and the watch lies on it.
-  if(flat){ backdrop.quaternion.identity(); backdrop.position.set(0,0,-6); }
-  else { backdrop.quaternion.copy(q); backdrop.position.copy(camBack).normalize().multiplyScalar(-6); }
+  // The studio wall follows the camera: always square-on, six units behind the watch as it
+  // was built, so no orbit or tilt ever reaches its edge. (In 2D the camera is fixed anyway.)
+  backdrop.quaternion.copy(q);
+  backdrop.position.copy(camBack).normalize().multiplyScalar(-6);
 }
 /* ---- carry: take the watch by its ring and put it anywhere on the screen ---- */
 // One finger on the bow moves the watch; one finger anywhere else still turns it over. These

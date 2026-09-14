@@ -24,7 +24,7 @@ final class Prefs {
     static void setBackground(Context c, int v) {
         get(c).edit().putInt("bg", v).putString("design", "custom").apply();
     }
-    /** The watch floating free (full orbit), or the same watch with its back on the wall. */
+    /** The watch floating free (full orbit), or the same watch hanging flat as a pendulum. */
     static boolean threeD(Context c) { return get(c).getBoolean("threeD", true); }
     /** Whether the watch holds still in the world as the phone moves. */
     static boolean gyro(Context c) { return get(c).getBoolean("gyro", true); }

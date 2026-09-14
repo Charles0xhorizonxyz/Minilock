@@ -130,7 +130,7 @@ public class MainActivity extends Activity {
         preview.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
 
         textSize();
-        Switch threeD = row("3D watch", "Off: the same watch with its back on the wall, seen from an angle but never from behind");
+        Switch threeD = row("3D watch", "Off: the same watch hanging flat, swinging like a pendulum as the phone moves");
         threeD.setChecked(Prefs.threeD(this));
         threeD.setOnCheckedChangeListener((v, on) -> {
             Prefs.get(this).edit().putBoolean("threeD", on).apply();
