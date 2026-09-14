@@ -139,14 +139,15 @@ const qDevice=new THREE.Quaternion(), qBase=new THREE.Quaternion(),
       qWanted=new THREE.Quaternion(), qSmooth=new THREE.Quaternion(),
       camBack=new THREE.Vector3(), camRight=new THREE.Vector3(), camUp=new THREE.Vector3();
 var bgWhite=0;                        // luminance of the chosen background; 0 for the dark studio
-function bgColour(v){                 // the slider: 1 is white, 0 the dark studio, a rainbow between
+// Seamless-paper tones, the way a studio backdrop actually comes: ivory, rose clay, ochre,
+// sage, teal grey, slate blue, plum, charcoal. Same order as a spectrum, none of its neon.
+// The slider's track in the app carries these same eight stops, evenly spaced.
+const PAPERS=[[.933,.910,.863],[.769,.545,.502],[.769,.659,.416],[.561,.643,.541],
+              [.435,.604,.612],[.369,.451,.580],[.420,.353,.478],[.118,.125,.141]];
+function bgColour(v){                 // the slider: 1 is ivory, 0 the dark studio, paper between
   if(v<=0) return null;
-  const hsl=(h,s,l)=>{ const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l);
-    const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1)); return [f(0),f(8),f(4)]; };
-  const lo=1/7, hi=6/7;               // the same seven stops as the slider's track in the app
-  if(v>=hi){ const k=(v-hi)/(1-hi); return [1,0,0].map((r,i)=>r+(1-r)*k); }   // red -> white
-  if(v<=lo) return hsl(270,1,.5).map(x=>x*(v/lo));                              // black -> violet
-  return hsl((hi-v)/(hi-lo)*270,1,.5);                                          // red -> violet
+  const t=(1-v)*(PAPERS.length-1), i=Math.min(PAPERS.length-2,Math.floor(t)), k=t-i;
+  return PAPERS[i].map((x,c)=>x+(PAPERS[i+1][c]-x)*k);
 }
 /* ---- the caseback plate is remembered ---- */
 // The page cannot write preferences, so it hands the plate's state to the app through the
@@ -279,6 +280,10 @@ function applyCamera(){
   camUp.set(0,1,0).applyQuaternion(qSmooth);
   camera.position.set(0,-0.15,0).add(camBack)
       .addScaledVector(camRight,userX).addScaledVector(camUp,userY-cardLift);
+  // The studio wall follows the camera: always square-on, six units behind the watch as it
+  // was built, so no orbit or tilt ever reaches its edge.
+  backdrop.quaternion.copy(qSmooth);
+  backdrop.position.copy(camBack).normalize().multiplyScalar(-6);
 }
 /* ---- carry: take the watch by its ring and put it anywhere on the screen ---- */
 // One finger on the bow moves the watch; one finger anywhere else still turns it over. These

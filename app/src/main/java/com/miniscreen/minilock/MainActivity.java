@@ -207,24 +207,24 @@ public class MainActivity extends Activity {
         return control;
     }
 
-    /** White, through the rainbow, to black: the studio behind the watch, on every surface. */
+    /** Ivory, through paper tones, to charcoal: the studio behind the watch, on every surface. */
     private void background() {
         LinearLayout labels = new LinearLayout(this);
         labels.setOrientation(LinearLayout.VERTICAL);
         labels.setPadding(0, dp(15), 0, dp(4));
         labels.addView(text("Background", 16, 0xFFE7E4DF));
-        TextView description = text("White to black through the rainbow, behind the watch everywhere", 12, muted);
+        TextView description = text("Ivory to charcoal through natural tones, behind the watch everywhere", 12, muted);
         description.setPadding(0, dp(5), 0, 0);
         labels.addView(description);
         add(labels, -2);
 
         scale = new SeekBar(this);
         scale.setMax(100);
-        // Seven even stops; the page maps the value to the same colours (see bgColour in the
-        // generator), so the track shows exactly what the backdrop will be.
+        // Eight even stops of seamless-paper tones; the page maps the value to the same colours
+        // (PAPERS in the generator), so the track shows exactly what the backdrop will be.
         GradientDrawable track = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[] {0xFFFFFFFF, 0xFFFF0000, 0xFFFFFF00, 0xFF00FF00,
-                           0xFF00FFFF, 0xFF0000FF, 0xFF8000FF, 0xFF000000});
+                new int[] {0xFFEEE8DC, 0xFFC48B80, 0xFFC4A86A, 0xFF8FA48A,
+                           0xFF6F9A9C, 0xFF5E7394, 0xFF6B5A7A, 0xFF1E2024});
         track.setCornerRadius(dp(4));
         track.setSize(dp(200), dp(8));
         track.setStroke(dp(1), 0xFF3A424B);            // so the black end still has an edge

@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.38**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.40**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -179,13 +179,15 @@ CAMERA, so the watch goes the other way.
 
 ### 4. Background scale and carry by the ring (v0.0.29)
 
-Both shipped in v0.0.29; the scale became a rainbow in v0.0.31. **Background**: a `SeekBar` in
-the app whose track runs white, red, yellow, green, cyan, blue, violet, black (seven even stops)
-writes Prefs `bg` (0 = the dark studio, 100 = white); `Watch3D.applyBackground` pushes it on
-page load and live while sliding; `bgColour(v)` in the generator maps the value to the same
-seven stops (linear hue 0→270 between 6/7 and 1/7, red→white above, violet→black below) and
-`__lock.setBackground` regenerates the backdrop texture in that colour with the usual vignette;
-the card's ink follows the colour's luminance. Verified on the phone.
+Both shipped in v0.0.29; the scale became a rainbow in v0.0.31 and natural paper tones in
+v0.0.39. **Background**: a `SeekBar` in the app whose track carries eight even stops of
+seamless-paper colours (ivory, rose clay, ochre, sage, teal grey, slate blue, plum, charcoal)
+writes Prefs `bg` (0 = the dark studio, 100 = ivory); `Watch3D.applyBackground` pushes it on
+page load and live while sliding; `PAPERS`/`bgColour(v)` in the generator interpolate the same
+stops and `__lock.setBackground` regenerates the backdrop texture in that colour with the usual
+vignette; the card's ink follows the colour's luminance. Since v0.0.40 the backdrop plane
+follows the camera in `applyCamera` (square-on, six units behind the watch), so the orbit never
+reaches its edge. Verified on the phone.
 **Carry**: capture-phase pointer listeners on the canvas hit-test the bow (local `(0, 1.452, 0)`
 projected to the screen, reach `max(30px, 10% of width)`), call `__lock.nudge` per move, and
 stop the event so the turn handler never starts; a second finger hands over to the native
@@ -218,10 +220,6 @@ page now calls `minilock.put("plate", json)` (a `@JavascriptInterface` object ad
 dispatches `change` on the checkboxes) so the existing wiring applies it. Prefs key `plate`.
 Verified across a sleep and wake. The app's own Ambient/Sweep toggles still only affect the old
 flat dial; the 3D watch reads the plate. The "Set as screensaver" button on the plate is gone.
-
-**Seen while testing, not yet fixed:** with the gyroscope orbit live, a large turn shows the
-edge of the studio backdrop (an 18×18 plane at z=−6) with the page's flat colour beyond it. A
-backdrop that follows the camera direction, or a much larger one, would remove that.
 
 ### 7. "Edges cut off" (root cause found; framing never exercised)
 
