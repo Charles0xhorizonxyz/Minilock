@@ -42,6 +42,8 @@ header,.panel,.notes,.stage>p,.readout{display:none!important}
 .stage{margin:0}
 .screen{aspect-ratio:auto;width:100vw;height:100vh;border:0;border-radius:0;touch-action:none}
 .cardwrap{bottom:6%}
+#gyrohud{position:fixed;left:0;right:0;top:max(14px,env(safe-area-inset-top));text-align:center;
+  font:11px/1.4 monospace;color:#8a93a0;pointer-events:none;z-index:9;white-space:pre}
 </style>""")
 
 # A tap must not turn the watch over: it collides with double-tap-to-zoom, and the handler is
@@ -49,8 +51,12 @@ header,.panel,.notes,.stage>p,.readout{display:none!important}
 sub("  if(moved<5) windOver();                    // a tap winds it, a drag keeps its speed",
     "  // a tap deliberately does nothing here: it collided with double-tap-to-zoom")
 
-# make loop reassignable so the camera pass can wrap it
-sub("function loop(now){", "var loop = function loop(now){")
+# Make loop reassignable so the camera pass can wrap it. The inner function must NOT be named
+# `loop`: in a named function expression the name is bound to the function itself, so the
+# `requestAnimationFrame(loop)` inside the body re-scheduled the raw loop, and the wrapper --
+# with the camera fit, zoom, placement and gyroscope in it -- ran exactly once per page load.
+# That was the case from v0.0.05 to v0.0.27.
+sub("function loop(now){", "var loop = function rawLoop(now){")
 
 # The camera was at a fixed distance, so on a 9:20 phone the visible width was 1.91 world
 # units while the case is 2.0 wide — the edges were always going to clip. Fit it to whichever
@@ -93,16 +99,41 @@ const qDevice=new THREE.Quaternion(), qBase=new THREE.Quaternion(),
       qWanted=new THREE.Quaternion(), qSmooth=new THREE.Quaternion(),
       camBack=new THREE.Vector3();
 let haveBase=false, lastSpin=0;
+let hud=null, hudAt=0, samples=0, testOffset=null;
+function retarget(){                  // where the camera should be, relative to where it started
+  qWanted.copy(qDevice);
+  if(testOffset) qWanted.multiply(testOffset);   // a local turn, as if the hand had made it
+  qWanted.premultiply(qBase);
+}
+const eul=new THREE.Euler();
+const deg=r=>String(Math.round(r*180/Math.PI)).padStart(4)+"°";
 window.__lock={
+  testTurn(yawDeg,pitchDeg,rollDeg){  // from adb: pretend the phone turned this much about
+    if(yawDeg===null||yawDeg===undefined) testOffset=null;   // its own axes. null clears it.
+    else { eul.set(pitchDeg*Math.PI/180, yawDeg*Math.PI/180, rollDeg*Math.PI/180, "YXZ");
+           testOffset=new THREE.Quaternion().setFromEuler(eul); }
+    if(haveBase) retarget();
+  },
+  setDebug(on){                       // what the gyroscope delivers, in words; preview only
+    if(on && !hud){ hud=document.createElement("div"); hud.id="gyrohud"; document.body.appendChild(hud); }
+    if(hud) hud.style.display = on ? "block" : "none";
+  },
   setQuat(w,x,y,z){
     // Euler angles were the wrong tool: a phone held upright to look at the screen sits right
     // on the gimbal-lock singularity, where azimuth goes degenerate and collapses back. A
     // quaternion has no singularity, so the orbit is genuinely free in every direction.
-    // Android's sensor frame is X east, Y north, Z up; three.js is X right, Y up, Z toward the
-    // viewer -- hence the axis swap.
-    qDevice.set(x, z, -y, w);
-    if(!haveBase){ qBase.copy(qDevice).invert(); haveBase=true; qSmooth.copy(qDevice); }
-    qWanted.copy(qDevice).premultiply(qBase);
+    // No axis swap. The sensor quaternion takes DEVICE axes (X right, Y up the screen, Z out
+    // of the screen) to the world, and a three.js camera's local axes are exactly those. The
+    // baseline product below is device-now -> device-at-start, so the world frame cancels
+    // out entirely. Relabelling the components as (x,z,-y) conjugated the rotation instead:
+    // a yaw about the screen's vertical axis became a roll about the viewing axis, so walking
+    // round the watch spun it flat in the screen and never showed its side.
+    qDevice.set(x, y, z, w);
+    samples++;
+    const first=!haveBase;
+    if(first){ qBase.copy(qDevice).invert(); haveBase=true; }
+    retarget();
+    if(first) qSmooth.copy(qWanted);   // start from rest, not from a swing out of the raw frame
     const spin = 2*Math.acos(Math.min(1,Math.abs(qWanted.w)));
     vphi += -Math.max(-0.5,Math.min(0.5,(spin-lastSpin)))*2.2;   // motion rocks it on its bow
     lastSpin = spin;
@@ -135,6 +166,12 @@ function applyCamera(){
   // world space, so tilting sweeps the environment map across the gold the way it would across
   // real metal. Rotating the scene would carry the lights along and kill the effect.
   qSmooth.slerp(qWanted, 0.22);       // damped enough to feel like glass rather than jelly
+  if(hud && performance.now()-hudAt>120){
+    hudAt=performance.now();
+    eul.setFromQuaternion(qWanted,"YXZ");
+    hud.textContent="gyro #"+samples+"   yaw "+deg(eul.y)+"   pitch "+deg(eul.x)
+      +"   roll "+deg(eul.z)+(haveBase?"":"   (no baseline yet)")+(testOffset?"   TEST":"");
+  }
   const d=camFit*zoom;
   // The offset that makes room for the card must be derived from the CURRENT distance. Taking
   // it from the fitted distance meant zooming in kept a far-view offset and threw the watch

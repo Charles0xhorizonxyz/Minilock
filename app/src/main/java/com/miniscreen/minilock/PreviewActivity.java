@@ -17,7 +17,12 @@ public class PreviewActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); });
+        web = Watch3D.view(this, () -> {
+            if (battery != null) battery.refresh();
+            // Gyroscope readout. Nothing on this side can move the phone, so the page reports
+            // what the sensor delivers and the user reads it back. Temporary, preview only.
+            web.evaluateJavascript("window.__lock&&__lock.setDebug(true)", null);
+        });
         web.setContentDescription("Fullscreen 3D pocket watch. Swipe up to return.");
         setContentView(web);
         Watch3D.immersive(getWindow());     // after setContentView, or the decor view is null

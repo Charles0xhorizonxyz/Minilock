@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.26**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.28**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -79,57 +79,98 @@ python tools/make-lock-asset.py
 It only appears if the user has enabled "Stand-in lock screen" in the app AND set their real
 screen lock to None. Currently the real lock is off and the stand-in is on.
 
-### The critical testing limitation
+### Testing from this side: what adb can and cannot do
 
-**adb cannot simulate the gestures the open work depends on.** `input` is single-touch only.
-`sendevent` on `/dev/input/event4` (the touchscreen) needs root, which GrapheneOS denies
-(`Permission denied`). And nothing can wave the phone for the gyroscope. So **pinch-zoom,
-two-finger placement, and the gyroscope cannot be verified from this side.** Do not claim they
-work from a screenshot. The previous session repeatedly reported gesture fixes as done when
-they were not — do not repeat that. Instead:
+`input` is single-touch only, `sendevent` on the touchscreen needs root (GrapheneOS denies it),
+and nothing here can move the phone. So **pinch, two-finger placement and the real sensor still
+need the user's hands.** Do not claim they work from a screenshot. Earlier sessions did, repeatedly.
 
-- Verify what you *can*: no crash, no JS error, correct render, single-tap still toggles a
-  switch, real battery shows on the counter, scrolling reaches the bottom.
-- For gestures, there is a **touch readout HUD** at the top of the app (under the version). It
-  prints `touch <action> fingers <n> scale <s> pan <p>`. Ask the user to perform the gesture
-  and read the HUD back. That is the only reliable verification channel for multi-touch.
+What you CAN do, which the earlier sessions could not:
+
+- **Evaluate JavaScript inside the live page.** The debug build exposes WebView DevTools.
+  `python tools/page-eval.py "<expression>"` forwards the socket and evaluates in every open
+  page (the in-app hero and the preview both load `lock.html`; tell them apart by `vh`).
+  Read `__lock.placement()`, read the readout text, or call any bridge function.
+- **Pretend the phone turned:** `__lock.testTurn(yaw, pitch, roll)` in degrees, about the
+  phone's own axes, held until `testTurn(null)`. Screenshot after about a second. This verifies
+  the camera maths; it cannot verify the sensor's sign convention.
+- **Drive zoom and placement:** `__lock.setZoom(z)` (camera distance multiplier, 0.42–2.4)
+  and `__lock.nudge(dx, dy)` in pixels.
+- **Read what the sensor delivers:** the fullscreen preview shows a readout under the top edge,
+  `gyro #<samples>  yaw  pitch  roll` (Euler YXZ of the orientation relative to the start, in
+  degrees; `TEST` while a pretend turn is active). The app screen has the touch readout
+  `touch <action> fingers <n> scale <s> pan <p>`. Ask the user to perform the gesture or the
+  movement and read the line back. Both readouts are temporary diagnostics.
+
+Practical gotchas that cost time:
+
+- Git Bash rewrites `/data/local/tmp/...` into a Windows path before adb sees it. Put
+  `export MSYS_NO_PATHCONV=1` in front of any adb shell command that carries a device path.
+- `PreviewActivity` is not exported, so `am start` is refused. Open it through the app: start
+  MainActivity, `input swipe 540 1900 540 500 300` twice, then `input tap 540 1980` on
+  "Preview fullscreen". Tapping the watch in the app does NOT open the preview: the WebView
+  swallows the click so the hero's click listener never fires. Small bug, unfixed.
+- The phone sleeps; a black screenshot means that. Send `KEYCODE_WAKEUP`, and expect the
+  stand-in lock screen on wake — dismiss it with `input swipe 540 1800 540 800 200`.
+- `uiautomator dump /data/local/tmp/ui.xml` finds a button's bounds by its text.
+- The preview is not orientation-locked. Turning the phone to landscape recreates the activity,
+  reloads the page and takes a new gyro baseline. Keep it portrait during gyro tests, or lock it.
 
 ---
 
 ## What to check — open items, in priority order
 
-### 1. App pinch-zoom (v0.0.26 — the current fix, UNVERIFIED)
-The last change: `ZoomLayout.dispatchTouchEvent` now returns `true` on `ACTION_DOWN` so the
-view is never dropped from a gesture that starts over non-interactive content (plain text,
-background). The theory: a View that does not consume DOWN stops receiving the rest of the
-gesture, so the second finger of a pinch never arrived unless DOWN happened to land on an
-interactive child. **Ask the user to pinch over plain areas and read the HUD.** If it shows
-`fingers 2` and `scale` changing, it works — then remove the HUD (added only for diagnosis).
-If it stays `fingers 1`, the touchscreen delivers multi-touch differently and needs a new
-approach.
+### 1. Gyroscope (v0.0.28 — two real bugs fixed, needs the user's hands)
 
-### 2. Gyroscope (v0.0.25 — UNVERIFIED)
-Rebuilt on **quaternions** because the real bug was gimbal lock: `getOrientation()` Euler
-azimuth is degenerate when the phone is held upright, so the orbit collapsed to centre — that
-is the user's "moves a bit and goes back to centre". `TiltBridge` now sends the raw quaternion
-(`getQuaternionFromVector`) and `applyCamera()` in `lock.html` sets the camera orientation
-directly and stands it off along its own back axis. **Watch should hold still while you walk
-the phone around it, past 360°, no recentring.** The axis map is `qDevice.set(x, z, -y, w)` in
-`tools/make-lock-asset.py` — if turning shows the wrong side or pitch/yaw are swapped, that one
-line and the signs are the fix.
+Both found by reading the code, both fixed in v0.0.28:
 
-### 3. "Edges cut off" (recurring, possibly a red herring)
-The user has reported this ~6 times. History: it was a real camera-framing bug (fixed v0.0.06),
-then I reintroduced it (fixed v0.0.13). It may now be a **persisted placement** — the watch
-size/position is saved to Prefs (`place`), so a placement saved by accident makes the watch too
-big on next launch. There is a **"Reset watch size and position"** button in the app that
-clears it. If the user reports edges cut off again, first have them hit reset, then place the
-watch by pinch + two-finger drag. Confirm which surface and which edge before changing code.
+- **The camera pass never ran.** Since v0.0.05 the generator wrapped the render loop as
+  `var loop = function loop(now){...}`. Inside a named function expression the name binds to
+  the function itself, so the loop's own `requestAnimationFrame(loop)` re-scheduled the raw
+  loop and the wrapper carrying `applyCamera()` ran once per page load. Everything in
+  `applyCamera` — camera fit, zoom, placement, card offset, gyroscope orbit — was dead in every
+  build to v0.0.27. That is the recurring "edges cut off" (the fitted distance never applied;
+  the camera sat at the original fixed 9.2) and the "moves a bit and goes back to centre" (the
+  bow spring in `setQuat`, which does run). Fixed by naming the inner function `rawLoop`.
+- **The axis map was a conjugation.** `qDevice.set(x, z, -y, w)` relabelled the rotation axis,
+  turning a yaw about the screen's vertical axis into a roll about the viewing axis. The sensor
+  quaternion maps device axes (X right, Y up the screen, Z out of the screen) to the world, and
+  a three.js camera's local axes are the same, so the components pass straight through and the
+  baseline product cancels the world frame. Now `qDevice.set(x, y, z, w)`.
 
-### 4. Watch positioning & persistence (v0.0.21+ — UNVERIFIED)
-Pinch sizes the watch (native `ScaleGestureDetector` → `__lock.setZoom`), two-finger drag moves
-it on both axes (`__lock.nudge`), and the placement is saved on gesture-end and restored on
-page load (`Prefs.placement` ↔ `Watch3D.savePlacement/restorePlacement`).
+Verified from here with `testTurn`: yaw 60 shows the case from the side, pitch 60 goes over the
+top, roll 60 spins it flat. **Not verified:** the real sensor's sign convention (does walking to
+the left read as positive yaw and show the watch's right side?). If the user reports a mirrored
+or wrong-side motion, negate the offending component in `setQuat`; do not reorder the axes.
+The baseline is the first sample after page load, so the phone should already be held the way
+the user wants to see the watch head-on when the preview opens.
+
+### 2. App pinch-zoom (v0.0.26 — UNVERIFIED, unchanged)
+
+`ZoomLayout.dispatchTouchEvent` returns `true` on `ACTION_DOWN` so the view is never dropped
+from a gesture that starts over plain text. That diagnosis is right but covers half the failure:
+if the first finger drifts more than the touch slop vertically before the second lands, the
+ScrollView intercepts, sends the ZoomLayout a CANCEL and owns the rest; Android never consults
+`onInterceptTouchEvent` again, so the "two fingers is never a scroll" rule cannot run. **Ask the
+user to pinch over the title text and read the HUD.** `fingers 2` with scale changing: works,
+remove the HUD. `CANCEL fingers 1` then nothing: the interception gap — fix by having
+`ZoomScrollView.onTouchEvent` hand a `POINTER_DOWN` back to the ZoomLayout. `fingers 1`
+throughout with no CANCEL: the second pointer is not reaching the window at all.
+
+### 3. Placement (v0.0.28 — live for the first time)
+
+Prefs holds `place = 0.931216,-0.748,2.224` (zoom, camera X, camera Y in world units), saved by
+an accidental gesture while nothing rendered. Now that the camera pass runs it puts the watch in
+the bottom-right corner of the hero, the preview and the lock screen. The user should tap
+**"Reset watch size and position"** in the app (it clears the pref and reloads). Do not clear
+app data; the previous session was called out for that. Note the sign: `userX/userY` move the
+CAMERA, so the watch goes the other way.
+
+### 4. "Edges cut off" (root cause found; framing never exercised)
+
+Root cause is item 1. After the reset, check the framing on the preview: the whole case with
+the bow should fit with a margin. If it does not, the fit constants `NEED_W`/`NEED_H` in the
+generator are the knob, and they have never actually been exercised on a device.
 
 ### 5. Real battery on the réserve counter (v0.0.18 — VERIFIED, working)
 `BatteryBridge` reads `ACTION_BATTERY_CHANGED` (sticky, no permission) and pushes to
@@ -153,7 +194,8 @@ confirmed on-device (dial matched the phone's percent).
 | `LockService.java` | Foreground service; launches the lock screen on `ACTION_SCREEN_ON`. Needs `SYSTEM_ALERT_WINDOW`. |
 | `WatchView.java` | The OLD flat 2D Canvas dial. Used by screensaver + wallpaper only. |
 | `tools/watch3d.html` | The 3D watch source (also a standalone browser artifact). |
-| `tools/make-lock-asset.py` | Transforms `watch3d.html` → `app/src/main/assets/lock.html`: bundles three.js, adds the viewport meta, strips page chrome, adds the `window.__lock` bridge (`setQuat/setZoom/nudge/setCard/setBattery/setPlacement`). **Edit the watch here, then regenerate — never hand-edit `lock.html`.** |
+| `tools/make-lock-asset.py` | Transforms `watch3d.html` → `app/src/main/assets/lock.html`: bundles three.js, adds the viewport meta, strips page chrome, wraps the render loop with `applyCamera()` (the inner function must not be named `loop`, see item 1), adds the `window.__lock` bridge (`setQuat/setZoom/nudge/setCard/setBattery/setPlacement/testTurn/setDebug`). **Edit the watch here, then regenerate — never hand-edit `lock.html`.** |
+| `tools/page-eval.py` | Evaluates a JavaScript expression in the live WebView pages over DevTools. The verification channel that did not exist before v0.0.28. |
 
 The JS↔native bridge is `window.__lock`. Native calls it via
 `web.evaluateJavascript("window.__lock&&__lock.xxx(...)", null)`.

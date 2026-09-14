@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.25**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.28**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -10,9 +10,24 @@ Status key: **Done** · **Prototype only** — built in `tools/`, not in the And
 
 | # | What you asked | Status |
 |---|---|---|
-| 28 | Watch edges cut off | **Check** — fixed three times, broken twice. See below. |
-| 29 | Pinch zoom with two fingers | **Check** — only really fixed in v0.0.14. See below. |
+| 28 | Watch edges cut off | **Check** — the real cause was found in v0.0.28: the fitted camera never applied. See below. |
+| 29 | Pinch zoom with two fingers (the app screen) | **Check** — v0.0.26 claims every DOWN; unverified, and one gap remains. See 29. |
 | 17 | A real customisable lock screen (custom GrapheneOS) | **Open** — planned and documented, nothing built |
+
+### The camera pass that never ran (found in v0.0.28)
+
+Since v0.0.05 the generator has wrapped the scene's render loop so a camera pass could run before
+every frame. It wrote `var loop = function loop(now){...}`. In a named function expression the
+name is bound to the function itself, so the loop's own `requestAnimationFrame(loop)` kept
+re-scheduling the raw loop, and the wrapper — the only caller of `applyCamera()` — ran exactly
+once per page load, before the first sensor sample and before the camera fit was computed.
+
+Everything `applyCamera` does was therefore dead on every build from v0.0.05 to v0.0.27: the
+fitted camera distance (#28), pinch zoom on the watch (#29b, #37, #44), placement (#42), the
+card offset (#32), and the gyroscope orbit (#22, #30, #41, #46). The "moves a bit and goes back
+to centre" you saw was the bow spring, which lives in `setQuat` and did run; the orbit never did.
+The screenshots the earlier sessions used as evidence showed the un-fitted camera the whole time.
+Fixed in v0.0.28 by naming the inner function `rawLoop`.
 
 ### 28 — Watch edges cut off
 
@@ -21,6 +36,7 @@ You raised this first, and you were right that it kept not being fixed:
 1. **Original cause:** the camera sat at a fixed distance. On a 9:20 screen that gives 1.91 world units of visible width, and the case is 2.0 across, so the edges *always* clipped. Fixed in v0.0.06 by fitting the camera to whichever axis is tighter.
 2. **Broken again in v0.0.10.** I added a look-at offset so the watch would sit above the card, but computed it from the *fitted* distance. Zooming in kept a far-view offset and threw the watch clean off the top of the frame — which is what you saw.
 3. **Fixed in v0.0.13:** the offset is now derived from the current camera distance, so it stays correct at any zoom.
+4. **None of that ever rendered.** See the section above: the camera stayed at the original fixed 9.2, which is exactly the always-clipping case from item 1. v0.0.28 is the first build in which the fit applies. **Check** it on the preview after tapping "Reset watch size and position" (see #48).
 
 ### 29 — Zoom
 
@@ -82,7 +98,9 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 43 | Zooming in the app was lost | **Done and confirmed by you** — v0.0.22 |
 | 44 | Same zoom behaviour on the lock screen | Done — v0.0.23. Two pinch handlers were fighting; the native one is now the only controller. **Unverified** |
 | 45 | Zoom only worked over parts of the app; no sideways pan | Done — v0.0.25. The ScrollView was claiming the gesture wherever it decided first |
-| 46 | Gyroscope still minimal and recentres | Done — v0.0.25. The real cause was gimbal lock in the Euler azimuth, not the clamp. Rebuilt on quaternions. **Unverified** |
+| 46 | Gyroscope still minimal and recentres | **Superseded** — v0.0.25 blamed gimbal lock. The orbit code had never run at all (see the camera pass above), and the quaternion axis map it introduced turned yaw into roll. |
+| 47 | Try the full gyroscope | **Check** — v0.0.28. Two bugs fixed: the camera pass never ran, and the axis map `(x,z,-y)` conjugated the rotation so a turn about the screen's vertical axis became a roll about the viewing axis. Verified from adb with pretend turns (`__lock.testTurn`): yaw shows the case from the side, pitch goes over the top, roll spins it flat. **Unverified:** that the real sensor's sign convention matches — needs your hands. A readout in the fullscreen preview shows what the sensor delivers. |
+| 48 | Watch stuck in the bottom-right corner (v0.0.28) | **Open, yours to clear** — Prefs holds a placement (zoom 0.93, camera X −0.75, camera Y +2.22) saved by an accidental two-finger gesture while nothing rendered. Now that the camera pass runs it applies on every surface. Tap **"Reset watch size and position"** in the app. I did not clear it for you. |
 
 ---
 
@@ -103,3 +121,4 @@ Worth recording so it does not repeat:
 2. **I fixed the framing, then broke it again** with the card offset, and did not re-check the case I had originally fixed.
 3. **Renaming the package made the app look unchanged** — new name, new icon, dead home-screen shortcut — and I gave you no way to tell which build was running until v0.0.11.
 4. **I cleared the app's data** while diagnosing, which reset your toggles without warning you first.
+5. **Nine versions of camera work were verified against a camera pass that never ran.** The loop wrapper was written once in v0.0.05 and never checked again; every later "fixed" for framing, zoom, placement and the gyroscope was built on it. When a fix does not change what you see, doubt the plumbing before the parameter.
