@@ -83,7 +83,7 @@ public class MainActivity extends Activity {
         edition.setLetterSpacing(.15f);
         edition.setGravity(Gravity.CENTER);
         add(edition, 26);
-        TextView turn = text("Pinch anywhere to zoom the screen · drag the watch to turn it over", 12, muted);
+        TextView turn = text("Pinch to zoom · two fingers to place the watch · drag it to turn it over", 12, muted);
         turn.setGravity(Gravity.CENTER);
         add(turn, 24);
 
@@ -94,6 +94,14 @@ public class MainActivity extends Activity {
                 Prefs.lock(this));
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
                 Prefs.card(this));
+
+        TextView resetWatch = text("Reset watch size and position", 14, gold);
+        resetWatch.setPadding(0, dp(16), 0, 0);
+        resetWatch.setOnClickListener(v -> {
+            Prefs.setPlacement(this, "");          // a bad placement would otherwise be permanent
+            if (hero != null) hero.reload();
+        });
+        add(resetWatch, -2);
 
         TextView overlay = text("Allow display over other apps   ↗", 14, gold);
         overlay.setPadding(0, dp(14), 0, 0);

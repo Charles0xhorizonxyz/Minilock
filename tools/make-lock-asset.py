@@ -149,27 +149,9 @@ function applyCamera(){
 const _rawLoop=loop;
 loop=function(now){ applyCamera(); _rawLoop(now); };
 
-/* ---- pinch inside the page, for hosts that are not wrapped in a ZoomLayout ---- */
-(function(){
-  const el=document.getElementById("gl");
-  let pinching=false, startGap=0, startZoom=1;
-  const gap=t=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
-  el.addEventListener("touchstart",e=>{
-    if(e.touches.length===2){
-      pinching=true; dragging=false;          // a pinch must not also spin the watch
-      startGap=gap(e.touches); startZoom=zoom;
-    }
-  },{passive:true});
-  el.addEventListener("touchmove",e=>{
-    if(pinching&&e.touches.length===2){
-      const g=gap(e.touches);
-      if(g>0) zoom=Math.max(0.42,Math.min(2.4,startZoom*(startGap/g)));
-    }
-  },{passive:true});
-  const end=e=>{ if(e.touches.length<2) pinching=false; };
-  el.addEventListener("touchend",end,{passive:true});
-  el.addEventListener("touchcancel",end,{passive:true});
-})();
+/* The page used to run its own pinch handler here. It fought the native ScaleGestureDetector --
+   both wrote `zoom` on the same gesture, so they cancelled each other out. The native detector
+   is now the only thing that drives zoom and placement, on every surface. */
 
 requestAnimationFrame(loop);
 

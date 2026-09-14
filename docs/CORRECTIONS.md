@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.22**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.24**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -79,7 +79,8 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 40 | Zoomed app could not reach the bottom, and scrolled slowly | Done — same nesting fix. Scrolling was being divided by the zoom factor |
 | 41 | Gyroscope only nudges and re-centres; wanted full 360 | Done — v0.0.20. Clamp and re-baseline removed, azimuth unwrapped and accumulated. **Unverified**: needs real movement |
 | 42 | Size and place the watch freely rather than auto-fit | Done — v0.0.20/21. Pinch sizes, two-finger drag places, and it is remembered. **Unverified** |
-| 43 | Zooming in the app was lost | Done — v0.0.22. My own v0.0.19 nesting change let the ScrollView steal the pinch. **Unverified** |
+| 43 | Zooming in the app was lost | **Done and confirmed by you** — v0.0.22 |
+| 44 | Same zoom behaviour on the lock screen | Done — v0.0.23. Two pinch handlers were fighting; the native one is now the only controller. **Unverified** |
 
 ---
 

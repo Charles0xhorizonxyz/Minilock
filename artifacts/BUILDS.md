@@ -27,6 +27,8 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.20-debug.apk` | 0.0.20 | 2026-09-14 02:53 | 250,188 B | `58eebca6f013f1f6` | **Gyroscope is now a full free orbit.** Tilt was clamped to about 25 degrees and re-baselined, so it nudged and settled back. Azimuth is unwrapped and accumulated, so turning the phone walks the camera right round the watch past 360 degrees and never resets. Two-finger drag places the watch on both axes. |
 | `Minilock-v0.0.21-debug.apk` | 0.0.21 | 2026-09-14 02:54 | 250,916 B | `ea3334155e67c721` | Placement persists: pinch size and position are saved when the gesture ends and restored when the page loads. |
 | `Minilock-v0.0.22-debug.apk` | 0.0.22 | 2026-09-14 02:57 | 250,992 B | `fb5978235525e7e1` | **Restores pinch zoom in the app**, lost in v0.0.19. Once the ScrollView became the parent it claimed the pinch as a scroll and the ZoomLayout got a CANCEL instead of a second finger. The gesture is now held the moment a second pointer lands. |
+| `Minilock-v0.0.23-debug.apk` | 0.0.23 | 2026-09-14 03:01 | 250,832 B | `9196a856e271c996` | **Lock screen pinch fixed**: the page ran its own pinch handler which fought the native ScaleGestureDetector, both writing zoom on the same gesture. The native detector is now the only controller, on every surface. |
+| `Minilock-v0.0.24-debug.apk` | 0.0.24 | 2026-09-14 03:02 | 251,060 B | `b96a521b18710ff0` | "Reset watch size and position" in the app, so a bad saved placement is never permanent. Gesture hint updated. |
 
 ## Conventions
 
