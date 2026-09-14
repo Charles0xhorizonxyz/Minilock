@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.35**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.38**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -77,7 +77,11 @@ python tools/make-lock-asset.py
 **Trigger the stand-in lock screen** (to test it): sleep then wake —
 `"$ADB" -s $D shell input keyevent KEYCODE_SLEEP; sleep 3; "$ADB" -s $D shell input keyevent KEYCODE_WAKEUP`.
 It only appears if the user has enabled "Stand-in lock screen" in the app AND set their real
-screen lock to None. Currently the real lock is off and the stand-in is on.
+screen lock to None. Currently the real lock is off and the stand-in is on. Since v0.0.36 the
+watch is **staged on SCREEN_OFF** (it exists, paused, while the phone sleeps) so it is in front
+the instant the screen wakes and never launches after the system's double-tap-power camera;
+SCREEN_ON only launches it if nothing was staged. `input keyevent KEYCODE_POWER KEYCODE_POWER`
+reproduces the camera gesture from adb.
 
 ### Testing from this side: what adb can and cannot do
 
@@ -237,14 +241,14 @@ confirmed on-device (dial matched the phone's percent).
 
 | File | Role |
 |---|---|
-| `MainActivity.java` | The app screen. Hosts the watch WebView (`hero`), then the background slider and the placement reset directly under it, then the settings toggles, wrapped in `ZoomScrollView` > `ZoomLayout`. |
+| `MainActivity.java` | The app screen. Hosts the watch WebView (`hero`), then the background slider, the "Reset to default" button and the Preview button, then the settings switches (Ambient, Sweep, Stand-in lock screen, Text under the watch, Screensaver — the last mirrors the system setting and opens it), wrapped in `ZoomScrollView` > `ZoomLayout`. |
 | `Watch3D.java` | Builds the WebView, loads `lock.html`, wires pinch (native `ScaleGestureDetector`), two-finger placement, card toggle, battery, immersive mode. **`immersive()` must be called AFTER `setContentView`** — calling `getInsetsController()` before returns null and crashes (this bit twice). |
 | `TiltBridge.java` | Gyroscope → `__lock.setQuat`. `GAME_ROTATION_VECTOR` (no magnetometer). |
 | `BatteryBridge.java` | Battery → `__lock.setBattery`. |
 | `ZoomLayout.java` | Pinch-zooms the whole app page by scaling the canvas. Sits **inside** the ScrollView. Claims DOWN (the v0.0.26 fix). Has the touch HUD hook (`setDebug`). |
 | `ZoomScrollView.java` | ScrollView subclass that does not intercept pinches or, when zoomed, sideways drags. |
 | `LockScreenActivity.java` | Stand-in lock screen. `showWhenLocked`, swipe-up to dismiss. |
-| `LockService.java` | Foreground service; launches the lock screen on `ACTION_SCREEN_ON`. Needs `SYSTEM_ALERT_WINDOW`. |
+| `LockService.java` | Foreground service; stages the lock screen on `ACTION_SCREEN_OFF` (fallback on `SCREEN_ON` when none is alive) so it never launches over the camera gesture. Needs `SYSTEM_ALERT_WINDOW`. |
 | `WatchView.java` | The OLD flat 2D Canvas dial. Used by screensaver + wallpaper only. |
 | `tools/watch3d.html` | The 3D watch source (also a standalone browser artifact). |
 | `tools/make-lock-asset.py` | Transforms `watch3d.html` → `app/src/main/assets/lock.html`: bundles three.js, adds the viewport meta, strips page chrome, wraps the render loop with `applyCamera()` (the inner function must not be named `loop`, see item 1), adds the `window.__lock` bridge (`setQuat/setZoom/nudge/setCard/setBattery/setPlacement/testTurn/setDebug`). **Edit the watch here, then regenerate — never hand-edit `lock.html`.** |

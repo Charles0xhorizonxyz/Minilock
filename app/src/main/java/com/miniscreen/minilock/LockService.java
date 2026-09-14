@@ -12,8 +12,13 @@ import android.os.Build;
 import android.os.IBinder;
 
 /**
- * Keeps the stand-in lock screen alive. ACTION_SCREEN_ON cannot be received from the manifest
- * since Oreo, so it is registered at runtime and the service has to stay resident to hear it.
+ * Keeps the stand-in lock screen alive. ACTION_SCREEN_OFF/ON cannot be received from the
+ * manifest since Oreo, so they are registered at runtime and the service stays resident.
+ *
+ * The watch is staged while the screen is OFF, so it is already in place when the screen
+ * wakes. Launching it on SCREEN_ON raced the system's double-tap-power camera gesture: the
+ * first press woke the phone and started the watch, the second started the camera, and
+ * whichever came up last covered the other. Nothing launches after the camera now.
  *
  * Starting an activity from the background is blocked on Android 10+; the exemption comes from
  * SYSTEM_ALERT_WINDOW ("display over other apps"), which is why that permission is required.
@@ -30,6 +35,10 @@ public class LockService extends Service {
         screen = new BroadcastReceiver() {
             @Override public void onReceive(Context context, Intent intent) {
                 if (!Prefs.lock(context)) return;
+                // SCREEN_ON is only a fallback for when nothing was staged (the service came
+                // up while the screen was already off). If the watch is there, leave it.
+                if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())
+                        && LockScreenActivity.alive) return;
                 Intent lock = new Intent(context, LockScreenActivity.class);
                 lock.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_NO_ANIMATION
@@ -38,6 +47,7 @@ public class LockService extends Service {
             }
         };
         IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         registerReceiver(screen, filter);
     }

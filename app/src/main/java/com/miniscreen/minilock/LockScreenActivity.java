@@ -15,6 +15,9 @@ import android.webkit.WebView;
  */
 public class LockScreenActivity extends Activity {
 
+    /** True while an instance exists; the service uses it to avoid staging a second one. */
+    static volatile boolean alive;
+
     private WebView web;
     private TiltBridge tilt;
     private BatteryBridge battery;
@@ -23,13 +26,10 @@ public class LockScreenActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
-        if (Build.VERSION.SDK_INT >= 27) {
-            setShowWhenLocked(true);
-            setTurnScreenOn(true);
-        } else {
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-                    | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
-        }
+        alive = true;
+        // No turnScreenOn: this is staged while the screen is off and must not wake it.
+        if (Build.VERSION.SDK_INT >= 27) setShowWhenLocked(true);
+        else getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); });
         setContentView(web);
@@ -54,6 +54,7 @@ public class LockScreenActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        alive = false;
         if (web != null) { web.destroy(); web = null; }
         super.onDestroy();
     }

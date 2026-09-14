@@ -25,6 +25,9 @@ public class MainActivity extends Activity {
     private ZoomLayout zoom;
     private BatteryBridge battery;
     private TiltBridge tilt;
+    private SeekBar scale;                // the background slider, so a reset can move it
+    private Switch dream;                 // mirrors the system screensaver setting
+    private boolean refreshingDream;      // so a programmatic refresh is not taken as a tap
 
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + .5f);
@@ -91,21 +94,24 @@ public class MainActivity extends Activity {
         // Right under the watch: the background scale and the reset, so a wrong colour or a
         // wrong placement is put right where you can see it change.
         background();
-        TextView resetWatch = text("Reset watch size and position", 14, gold);
-        resetWatch.setPadding(0, dp(14), 0, dp(18));
-        resetWatch.setOnClickListener(v -> {
+        TextView reset = text("Reset to default", 14, gold);
+        reset.setGravity(Gravity.CENTER);
+        reset.setBackground(background(0x00000000, gold));   // outlined: the quieter button
+        margin(reset, 18, 0);
+        reset.getLayoutParams().height = dp(48);
+        reset.setOnClickListener(v -> {
             Prefs.setPlacement(this, "");          // a bad placement would otherwise be permanent
-            if (hero != null) hero.reload();
+            Prefs.setBackground(this, 0);          // the dark studio
+            if (scale != null) scale.setProgress(100);   // not from the user, so no write
+            if (hero != null) hero.reload();             // reads both back from prefs
         });
-        add(resetWatch, -2);
 
-        TextView edition = text("EDITION 01", 11, gold);
-        edition.setLetterSpacing(.15f);
-        edition.setGravity(Gravity.CENTER);
-        add(edition, 26);
-        TextView turn = text("Pinch to size it · drag the ring to place it · drag the dial to turn it over", 12, muted);
-        turn.setGravity(Gravity.CENTER);
-        add(turn, 24);
+        TextView preview = text("Preview fullscreen   ↗", 14, ink);
+        preview.setGravity(Gravity.CENTER);
+        preview.setBackground(background(gold, gold));
+        margin(preview, 12, 10);
+        preview.getLayoutParams().height = dp(52);
+        preview.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
 
         toggle("Ambient mode", "Dimmed dial · seconds hidden · gentle drift", "ambient",
                 Prefs.ambient(this));
@@ -114,6 +120,7 @@ public class MainActivity extends Activity {
                 Prefs.lock(this));
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
                 Prefs.card(this));
+        screensaver();
 
         TextView overlay = text("Allow display over other apps   ↗", 14, gold);
         overlay.setPadding(0, dp(14), 0, 0);
@@ -125,37 +132,60 @@ public class MainActivity extends Activity {
                 + "actually locked — Home escapes this, and no app can stop that. A stopgap "
                 + "until the custom build.", 12, 0xFFC98A8A);
         caution.setLineSpacing(dp(3), 1);
-        caution.setPadding(0, dp(8), 0, 0);
+        caution.setPadding(0, dp(8), 0, dp(28));
         add(caution, -2);
+    }
 
-        TextView preview = text("Preview fullscreen   ↗", 14, ink);
-        preview.setGravity(Gravity.CENTER);
-        preview.setBackground(background(gold, gold));
-        margin(preview, 20, 0);
-        preview.getLayoutParams().height = dp(52);
-        preview.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
+    /**
+     * Whether Android's screensaver is Minilock. An app cannot set the screensaver itself, so
+     * the switch shows the real state and opens the system page to change it.
+     */
+    private boolean isScreensaver() {
+        try {
+            String on = Settings.Secure.getString(getContentResolver(), "screensaver_enabled");
+            String which = Settings.Secure.getString(getContentResolver(), "screensaver_components");
+            return "1".equals(on) && which != null && which.contains(getPackageName() + "/");
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
 
-        TextView activate = text("Set as Android screensaver", 13, gold);
-        activate.setGravity(Gravity.CENTER);
-        add(activate, 52);
-        activate.setOnClickListener(v -> {
-            try {
-                startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
-            } catch (android.content.ActivityNotFoundException e) {
-                new android.app.AlertDialog.Builder(this)
-                        .setMessage("This device does not expose Android screensaver settings. "
-                                + "You can still use the fullscreen preview.")
-                        .setPositiveButton("OK", null).show();
-            }
+    private void screensaver() {
+        dream = row("Screensaver", "Minilock as the Android screensaver · tap to open the phone's screensaver settings");
+        dream.setChecked(isScreensaver());
+        dream.setOnCheckedChangeListener((v, on) -> {
+            if (refreshingDream) return;
+            refreshingDream = true;
+            v.setChecked(!on);                    // the system decides; show its state, not the tap
+            refreshingDream = false;
+            openScreensaverSettings();
         });
-        TextView note = text("The screensaver and live wallpaper draw the flat Canvas dial; "
-                + "the 3D watch needs a WebView, which those surfaces cannot host.", 12, muted);
-        note.setGravity(Gravity.CENTER);
-        note.setLineSpacing(dp(3), 1);
-        add(note, -2);
+        View line = (View) dream.getParent();     // the whole row is the way in
+        line.setClickable(true);
+        line.setOnClickListener(v -> openScreensaverSettings());
+    }
+
+    private void openScreensaverSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_DREAM_SETTINGS));
+        } catch (android.content.ActivityNotFoundException e) {
+            new android.app.AlertDialog.Builder(this)
+                    .setMessage("This device does not expose Android screensaver settings.")
+                    .setPositiveButton("OK", null).show();
+        }
     }
 
     private void toggle(String title, String desc, String key, boolean checked) {
+        Switch control = row(title, desc);
+        control.setChecked(checked);
+        control.setOnCheckedChangeListener((v, on) -> {
+            Prefs.get(this).edit().putBoolean(key, on).apply();
+            if ("card".equals(key)) Watch3D.applyCard(hero);   // no need to wait for a reload
+        });
+    }
+
+    /** A settings row with a switch on the right; the caller decides what the switch does. */
+    private Switch row(String title, String desc) {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(0, dp(15), 0, dp(10));
@@ -167,18 +197,14 @@ public class MainActivity extends Activity {
         labels.addView(description);
         row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
         Switch control = new Switch(this);
-        control.setChecked(checked);
         control.setContentDescription(title);
         control.setThumbTintList(android.content.res.ColorStateList.valueOf(gold));
-        control.setOnCheckedChangeListener((v, on) -> {
-            Prefs.get(this).edit().putBoolean(key, on).apply();
-            if ("card".equals(key)) Watch3D.applyCard(hero);   // no need to wait for a reload
-        });
         row.addView(control, new LinearLayout.LayoutParams(dp(52), dp(48)));
         add(row, -2);
         View line = new View(this);
         line.setBackgroundColor(0xFF252A30);
         content.addView(line, new LinearLayout.LayoutParams(-1, dp(1)));
+        return control;
     }
 
     /** White, through the rainbow, to black: the studio behind the watch, on every surface. */
@@ -192,7 +218,7 @@ public class MainActivity extends Activity {
         labels.addView(description);
         add(labels, -2);
 
-        SeekBar scale = new SeekBar(this);
+        scale = new SeekBar(this);
         scale.setMax(100);
         // Seven even stops; the page maps the value to the same colours (see bgColour in the
         // generator), so the track shows exactly what the backdrop will be.
@@ -259,6 +285,11 @@ public class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        if (dream != null) {
+            refreshingDream = true;
+            dream.setChecked(isScreensaver());
+            refreshingDream = false;
+        }
         if (hero != null) hero.onResume();
         if (tilt != null) tilt.start();
         if (battery != null) battery.start();

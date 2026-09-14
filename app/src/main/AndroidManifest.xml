@@ -26,7 +26,7 @@
         </service>
         <activity android:name=".LockScreenActivity" android:exported="false"
             android:launchMode="singleInstance" android:excludeFromRecents="true"
-            android:showWhenLocked="true" android:turnScreenOn="true"
+            android:showWhenLocked="true"
             android:theme="@style/LockTheme" android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode|density" />
         <service android:name=".LockService" android:exported="false"

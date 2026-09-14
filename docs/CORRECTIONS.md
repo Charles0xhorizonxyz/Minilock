@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.35**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.38**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -108,6 +108,13 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 53 | Background from white to black, through a rainbow | **Done and verified** — v0.0.31. The slider's track shows white, red, yellow, green, cyan, blue, violet, black, and the page maps the same value to the same colour, painting the studio backdrop in it with the usual vignette. Seen on the phone: the track, a mint studio at the cyan stop, a pale pink one near the white end; green, violet and yellow read back from the page as exactly the predicted colours. Left at black. |
 | 54 | Mechanical controls on the back, following the watch perfectly | **Done and verified** — v0.0.32–v0.0.34. The HTML plate was a flat overlay scaled and skewed over the canvas, so it could only approximate the caseback and drifted as soon as the camera orbited. The controls are now painted into the caseback's own texture in the dial's language: three turned alloy medallions with the chosen one ringed, six knurled slide levers in cut slots, a three-detent selector for the counter at six, engraved captions. They are part of the metal, so they follow every turn and tilt exactly. A tap is ray-cast onto the caseback in 3D and mapped to the control under it. Verified on the phone: taps flipped AMBIENT, chose rose gold and MOON, the caseback repainted each time, and each change was saved. Two things this uncovered: the engraved caseback had been buried 0.006 inside the polished back since the 3D watch was built (v0.0.33 moves it proud), and the lower engraving on the band was drawn upside down (v0.0.34). |
 | 55 | Put the background slider and the reset right under the watch in the app | **Done and verified** — v0.0.35. Both now sit directly below the watch, above EDITION 01 and the toggles. |
+| 56 | Double-tap power should still open the camera | **Done and verified** — v0.0.36 (shipped in v0.0.38). The stand-in lock screen was launched on SCREEN_ON, which raced the system gesture: the first press woke the phone and started the watch, the second started the camera, and whichever came up last covered the other. The watch is now staged on SCREEN_OFF, so it is already there when the screen wakes and nothing launches after the camera; `turnScreenOn` is gone so staging cannot wake the phone. Verified on the phone: the watch exists while the phone dozes and the phone stays asleep; on wake it is in front at once; a double-press brings the GrapheneOS camera to the front both from the watch and from sleep; back returns to the watch. |
+| 57 | Make "Set as screensaver" a toggle like the others, under "Text under the watch" | **Done and verified** — v0.0.37. An app cannot set Android's screensaver itself, so the switch shows the real state (read from the system's screensaver settings: enabled, and Minilock chosen) and opens the phone's screensaver page to change it; it refreshes when you come back. Verified: it reads ON, matching the phone, and tapping it opened the system page. |
+| 58 | Remove the text about the screensaver needing 3D / a WebView | **Done** — v0.0.37. |
+| 59 | Remove "EDITION 01" and "Pinch to size it…" | **Done** — v0.0.37. |
+| 60 | Replace the reset text with a plain "Reset to default" button | **Done and verified** — v0.0.38. An outlined button under the slider. It clears the placement and puts the background back to the dark studio, moving the slider with it, then reloads the watch. Verified: prefs cleared and background 0 after a tap. |
+| 61 | Put the Preview button above Ambient mode | **Done and verified** — v0.0.38. |
+| 62 | Make the whole Screensaver row open the phone's screensaver settings | **Done and verified** — v0.0.38. Tapping the label opened Android's screensaver page. |
 
 ---
 
