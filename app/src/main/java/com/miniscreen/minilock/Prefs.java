@@ -11,9 +11,9 @@ final class Prefs {
     static boolean lock(Context c) { return get(c).getBoolean("lock", false); }
     static boolean card(Context c) { return get(c).getBoolean("card", true); }
     /**
-     * "factory": the watch exactly as designed (24k gold, bright dial, dark studio, text under
-     * it), saved choices kept but not applied. "custom": the caseback, background and text as
-     * the user left them. Any change to those makes it custom again.
+     * "factory": the watch exactly as designed (24k gold, bright dial, dark studio), saved
+     * choices kept but not applied. "custom": the caseback and background as the user left
+     * them. Any change to those makes it custom again. The text under the watch is separate.
      */
     static boolean factory(Context c) { return "factory".equals(get(c).getString("design", "custom")); }
     static void setFactory(Context c, boolean on) {

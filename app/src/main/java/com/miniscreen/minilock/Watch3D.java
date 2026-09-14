@@ -50,13 +50,13 @@ final class Watch3D {
         web.addJavascriptInterface(new PlateStore(context, onGesture), "minilock");
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView v, String url) {
-                // Factory design: the page's own defaults, which is the look that used to
-                // flash for an instant before the saved choices landed on top of it.
+                // Factory design: the page's own gold, dial and studio, which is the look that
+                // used to flash for an instant before the saved choices landed on top of it.
                 if (!Prefs.factory(context)) {
-                    applyCard(v);
                     applyBackground(v);
                     restorePlate(v);
                 }
+                applyCard(v);                 // the text under the watch follows its own switch
                 restorePlacement(v);          // size and position are not part of the design
                 if (onReady != null) onReady.run();      // state pushed before this was lost
             }

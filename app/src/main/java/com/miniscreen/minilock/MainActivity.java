@@ -117,7 +117,7 @@ public class MainActivity extends Activity {
         preview.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
 
         design = dropdown("Design",
-                "Factory: the watch as designed. Custom: your caseback, background and text choices",
+                "Factory: the watch as designed. Custom: your caseback and background choices",
                 new String[] {"Factory", "Custom"}, new String[] {"factory", "custom"},
                 Prefs.factory(this) ? 0 : 1, key -> {
                     Prefs.setFactory(this, "factory".equals(key));
@@ -203,11 +203,7 @@ public class MainActivity extends Activity {
         control.setChecked(checked);
         control.setOnCheckedChangeListener((v, on) -> {
             Prefs.get(this).edit().putBoolean(key, on).apply();
-            if ("card".equals(key)) {
-                Prefs.setFactory(this, false);                 // the text is part of the design
-                markCustom();
-                Watch3D.applyCard(hero);                       // no need to wait for a reload
-            }
+            if ("card".equals(key)) Watch3D.applyCard(hero);   // no need to wait for a reload
         });
     }
 
