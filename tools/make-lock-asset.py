@@ -89,7 +89,24 @@ sub("""    vphi += (-150*phi - 6.2*vphi)*h - drive;""",
 """    if(flat) vphi += (-25*(phi-phiTarget) - 1.2*vphi)*h - drive*4;   // 2D: a pendulum toward gravity
     else vphi += (-150*phi - 6.2*vphi)*h - drive;""")
 sub("""  phi=Math.max(-0.075,Math.min(0.075,phi));""",
-"""  { const lim=flat?1.3:0.075; phi=Math.max(-lim,Math.min(lim,phi)); }""")
+"""  { const lim=flat?1.3:0.075; phi=Math.max(-lim,Math.min(lim,phi)); }
+  psi=Math.max(-0.7,Math.min(0.7,psi));""")
+# Held by the ring in 3D: the body also swings in depth toward gravity (psi), and the watch
+# twists about the ring (yaw): it keeps its world heading while the phone turns, then the
+# twist unwinds slowly, like a watch on a chain.
+sub("""    phi  += vphi*h;""",
+"""    phi  += vphi*h;
+    if(hang3d){ vpsi += (-25*(psi-psiTarget) - 1.2*vpsi)*h; psi += vpsi*h;
+                vyaw += (-1.2*yaw - 1.6*vyaw)*h; yaw += vyaw*h; }   // unwinds over a few seconds
+    else { psi=0; vpsi=0; yaw=0; vyaw=0; }""")
+sub("""  if(frozen){ spin.rotation.y=theta; swingGroup.rotation.z=phi; return; }""",
+"""  if(frozen){ spin.rotation.y=theta; pose(); return; }""")
+sub("""  spin.rotation.y=theta;
+  swingGroup.rotation.z=phi;
+}""",
+"""  spin.rotation.y=theta;
+  pose();
+}""")
 
 # The studio backdrop takes a whiteness. 0 keeps the dark blue-grey exactly as designed; anything
 # else is a neutral grey with the same vignette, darkening the corners a little on light
@@ -150,6 +167,16 @@ const qDevice=new THREE.Quaternion(), qBase=new THREE.Quaternion(),
       camBack=new THREE.Vector3(), camRight=new THREE.Vector3(), camUp=new THREE.Vector3(),
       gDev=new THREE.Vector3(), qInv=new THREE.Quaternion();
 var phiTarget=0;                      // 2D: where gravity says the hanging watch should rest
+var psiTarget=0, psi=0, vpsi=0, yaw=0, vyaw=0, hang3d=false, lastHead=0, headOk=false;   // held in 3D
+const xw=new THREE.Vector3();
+// The swing group hangs from the ring. Order XZY: twist about the body's own axis first, then
+// swing that body sideways and in depth, so the twist never moves it off gravity.
+swingGroup.rotation.order="XZY";
+function pose(){
+  swingGroup.rotation.z=phi;
+  swingGroup.rotation.x=hang3d?psi:0;
+  swingGroup.rotation.y=hang3d?yaw:0;
+}
 var bgWhite=0;                        // luminance of the chosen background; 0 for the dark studio
 // Seamless-paper tones, the way a studio backdrop actually comes: ivory, rose clay, ochre,
 // sage, teal grey, slate blue, plum, charcoal. Same order as a spectrum, none of its neon.
@@ -185,6 +212,17 @@ function retarget(){                  // where the camera should be, relative to
   gDev.set(0,0,-1).applyQuaternion(qInv.copy(qWanted).invert());
   const inPlane=Math.hypot(gDev.x,gDev.y);
   phiTarget = Math.atan2(gDev.x,-gDev.y) * Math.min(1, inPlane*1.5);   // +z turns the body to the right
+  if(hang3d){                         // held by the ring in 3D: the body points along gravity itself
+    phiTarget = Math.atan2(gDev.x, Math.hypot(gDev.y,gDev.z));
+    psiTarget = Math.max(-0.7,Math.min(0.7, Math.atan2(-gDev.z,-gDev.y)));   // +x leans it into the screen
+    // The heading. A watch on its ring keeps its own while the phone turns about the vertical,
+    // so each turn of the phone twists it the other way in the phone's frame; the torsion
+    // spring in step() unwinds it. The phone's x axis is level whether upright or lying flat.
+    xw.set(1,0,0).applyQuaternion(qWanted);
+    const ok=Math.hypot(xw.x,xw.y)>0.3, head=Math.atan2(xw.y,xw.x);
+    if(ok&&headOk) yaw -= Math.atan2(Math.sin(head-lastHead),Math.cos(head-lastHead));
+    lastHead=head; headOk=ok;
+  }
   qWanted.premultiply(qBase);
 }
 const eul=new THREE.Euler();
@@ -197,14 +235,19 @@ window.__lock={
     if(haveBase) retarget();
   },
   face(){ return Math.cos(theta); },  // 1 dial toward you, -1 caseback; for tests from adb
-  setFlat(on){                        // 2D: the camera never moves; the watch is a pendulum
-    // The gyroscope no longer orbits the camera. Instead the watch hangs from its ring and
-    // swings toward gravity as the phone tilts, in the plane of the screen, and any motion
-    // gives it a push. 3D is the full orbit.
-    flat=!!on;
+  setFlat(on){ this.setMotion(on ? "hang2d" : "orbit"); },   // the older switch
+  setMotion(m){                       // how the watch moves with the phone
+    // "orbit": floating free, the camera goes round it. "hang2d": the camera never moves; the
+    // watch hangs from its ring and swings toward gravity in the plane of the screen, and any
+    // motion gives it a push. "hang3d": the same hold, but the body also swings in depth
+    // toward gravity and twists about the ring as the phone turns, so it shows its sides.
+    flat = m!=="orbit"; hang3d = m==="hang3d";
+    if(!hang3d){ psi=0; vpsi=0; yaw=0; vyaw=0; headOk=false; }
+    if(haveBase) retarget();
   },
   gyroReset(){                        // gyroscope switched off: back to head-on, re-baseline when it returns
     haveBase=false; qWanted.identity(); qSmooth.identity();
+    phiTarget=0; psiTarget=0; yaw=0; vyaw=0; headOk=false;   // the hanging watch comes to rest
   },
   fade(seconds){                      // the lock screen's night: the watch dims to black, then rests
     let veil=document.getElementById("nightfall");

@@ -138,10 +138,10 @@ final class Watch3D {
         applyFlat(web);                       // 3D or 2D
     }
 
-    /** 3D or 2D: the same watch, in perspective with its shadow and orbit, or flat and head-on. */
+    /** How the watch moves with the phone: floating, or held by the ring in 3D or in 2D. */
     static void applyFlat(WebView web) {
         if (web == null) return;
-        web.evaluateJavascript("window.__lock&&__lock.setFlat(" + !Prefs.threeD(web.getContext()) + ")", null);
+        web.evaluateJavascript("window.__lock&&__lock.setMotion('" + Prefs.motion(web.getContext()) + "')", null);
     }
 
     /** Paint the studio behind the watch the grey the user chose. */

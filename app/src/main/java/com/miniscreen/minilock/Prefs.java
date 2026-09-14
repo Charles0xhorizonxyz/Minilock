@@ -24,8 +24,13 @@ final class Prefs {
     static void setBackground(Context c, int v) {
         get(c).edit().putInt("bg", v).putString("design", "custom").apply();
     }
-    /** The watch floating free (full orbit), or the same watch hanging flat as a pendulum. */
-    static boolean threeD(Context c) { return get(c).getBoolean("threeD", true); }
+    /** "orbit": floating free; "hang3d": held by the ring, moving in 3D; "hang2d": a pendulum in the plane. */
+    static String motion(Context c) {
+        String m = get(c).getString("motion", null);
+        if (m != null) return m;
+        return get(c).getBoolean("threeD", true) ? "orbit" : "hang2d";   // the older switch
+    }
+    static void setMotion(Context c, String m) { get(c).edit().putString("motion", m).apply(); }
     /** Whether the watch holds still in the world as the phone moves. */
     static boolean gyro(Context c) { return get(c).getBoolean("gyro", true); }
     /** Text size of the app screen: a ten-step ladder, 0 to 9; step 4 is the design size. */

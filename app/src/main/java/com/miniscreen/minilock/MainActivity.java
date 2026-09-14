@@ -130,12 +130,14 @@ public class MainActivity extends Activity {
         preview.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
 
         textSize();
-        Switch threeD = row("3D watch", "Off: the same watch hanging flat, swinging like a pendulum as the phone moves");
-        threeD.setChecked(Prefs.threeD(this));
-        threeD.setOnCheckedChangeListener((v, on) -> {
-            Prefs.get(this).edit().putBoolean("threeD", on).apply();
-            Watch3D.applyFlat(hero);                       // live, on every surface from now on
-        });
+        String[] motionKeys = {"orbit", "hang3d", "hang2d"};
+        String[] motionNames = {"Floating", "Held by the ring, 3D", "Held by the ring, 2D"};
+        dropdown("Watch motion", "Floating free with the phone going round it, or hanging from the ring: "
+                + "swinging in 3D and showing its sides, or swinging flat",
+                motionNames, motionKeys, Gestures.indexOf(motionKeys, Prefs.motion(this)), key -> {
+                    Prefs.setMotion(this, key);
+                    Watch3D.applyFlat(hero);                   // live, on every surface from now on
+                });
         Switch gyro = row("Gyroscope", "The watch holds still in the world as the phone moves");
         gyro.setChecked(Prefs.gyro(this));
         gyro.setOnCheckedChangeListener((v, on) -> {
