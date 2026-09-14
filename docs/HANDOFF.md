@@ -239,7 +239,23 @@ dispatches `change` on the checkboxes) so the existing wiring applies it. Prefs 
 Verified across a sleep and wake. The app's own Ambient/Sweep toggles still only affect the old
 flat dial; the 3D watch reads the plate. The "Set as screensaver" button on the plate is gone.
 
-### 7. "Edges cut off" (root cause found; framing never exercised)
+### 7. Battery (measuring first; decision deferred by the user)
+
+Not minimal as designed. In order of cost: `LockScreenActivity` sets `FLAG_KEEP_SCREEN_ON`, so
+the display never times out while the watch shows; the scene renders every frame with soft
+shadows, MSAA and a lit environment at 2x CSS resolution whether or not anything moves (no
+rest mode); the Factory design (sweep on, ambient off) repaints the 1024x1024 dial texture
+every 33 ms (`every=(state.sweep&&!state.ambient)?33:1000` in the loop), Custom with ambient on
+once a second; `TiltBridge` runs `GAME_ROTATION_VECTOR` at `SENSOR_DELAY_GAME` (50 Hz) and
+crosses into the page on every changed sample; staging the lock screen on SCREEN_OFF costs a
+page load each time the screen goes dark, then pauses. `tools/battery-report.py` prints the
+phone's own accounting since the last charge (screen-on time, estimated mAh per uid, Minilock's
+CPU/sensor/foreground time; nothing is reset) and `--sample 600` measures the live drain from
+the charge counter over ten minutes (unplugged, watch on screen). The user chose to measure
+for a couple of days before deciding on fixes; the candidates are a screen timeout on the lock
+screen, a rest mode for the renderer, a cap on the sweep repaint, and a lower gyro rate at rest.
+
+### 8. "Edges cut off" (root cause found; framing never exercised)
 
 Root cause is item 1. After the reset, check the framing on the preview: the whole case with
 the bow should fit with a margin. If it does not, the fit constants `NEED_W`/`NEED_H` in the
