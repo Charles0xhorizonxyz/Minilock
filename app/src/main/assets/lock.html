@@ -929,7 +929,8 @@ function persist(){
   plate.addEventListener("click",later,true);
   plate.addEventListener("change",later,true); }
 let haveBase=false, lastSpin=0;
-let hud=null, hudAt=0, samples=0, testOffset=null, dark=false, darkTimer=0;
+let hud=null, hudAt=0, samples=0, testOffset=null, dark=false, darkTimer=0, flat=false;
+const qFlat=new THREE.Quaternion();  // identity: in 2D the camera never leaves head-on
 function retarget(){                  // where the camera should be, relative to where it started
   qWanted.copy(qDevice);
   if(testOffset) qWanted.multiply(testOffset);   // a local turn, as if the hand had made it
@@ -945,6 +946,14 @@ window.__lock={
     if(haveBase) retarget();
   },
   face(){ return Math.cos(theta); },  // 1 dial toward you, -1 caseback; for tests from adb
+  setFlat(on){                        // 2D: the same watch, head-on, no depth, no orbit
+    flat=!!on;
+    // A very narrow field of view from far away is, to the eye, an orthographic view: the case
+    // shows no perspective, the bow and the dial sit in one plane. The fit keeps the size.
+    camera.fov = flat ? 4 : 26; camera.far = flat ? 600 : 100; camera.updateProjectionMatrix();
+    fitCamera(camera.aspect);
+    caster.castShadow = !flat;        // no cast shadow on a flat wall
+  },
   gyroReset(){                        // gyroscope switched off: back to head-on, re-baseline when it returns
     haveBase=false; qWanted.identity(); qSmooth.identity();
   },
@@ -1054,18 +1063,19 @@ function applyCamera(){
   // The watch is a fixed object and the phone IS the camera: give the camera the device's
   // orientation, then stand it off by d along its own backward axis. The watch therefore stays
   // dead centre while you walk right around it, with no pole to tip over.
-  camera.quaternion.copy(qSmooth);
-  camBack.set(0,0,1).applyQuaternion(qSmooth).multiplyScalar(d);
+  const q = flat ? qFlat : qSmooth;   // 2D: the orbit is not applied, the bow still rocks
+  camera.quaternion.copy(q);
+  camBack.set(0,0,1).applyQuaternion(q).multiplyScalar(d);
   // Placement is a SCREEN offset: the user parks the watch somewhere on the glass and it must
   // stay there while the phone turns. So offset along the camera's own right and up, not
   // along world X and Y.
-  camRight.set(1,0,0).applyQuaternion(qSmooth);
-  camUp.set(0,1,0).applyQuaternion(qSmooth);
+  camRight.set(1,0,0).applyQuaternion(q);
+  camUp.set(0,1,0).applyQuaternion(q);
   camera.position.set(0,-0.15,0).add(camBack)
       .addScaledVector(camRight,userX).addScaledVector(camUp,userY-cardLift);
   // The studio wall follows the camera: always square-on, six units behind the watch as it
   // was built, so no orbit or tilt ever reaches its edge.
-  backdrop.quaternion.copy(qSmooth);
+  backdrop.quaternion.copy(q);
   backdrop.position.copy(camBack).normalize().multiplyScalar(-6);
 }
 /* ---- carry: take the watch by its ring and put it anywhere on the screen ---- */

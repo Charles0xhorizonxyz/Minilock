@@ -29,8 +29,6 @@ public class LockScreenActivity extends Activity {
     private boolean fading, darkened, swallow;
 
     private WebView web;
-    private WatchView flat;                   // the 2D dial, when the 3D watch is switched off
-    private View veil;                        // the 2D dial's fade to black (the 3D page has its own)
     private Gestures.Torch torch;
     private TiltBridge tilt;
     private BatteryBridge battery;
@@ -44,21 +42,6 @@ public class LockScreenActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 27) setShowWhenLocked(true);
         else getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if (!Prefs.threeD(this)) {
-            // The flat dial: no WebGL, no gyroscope, no bridges, no flick gestures; swipe up
-            // still unlocks and the clock below still fades it to black.
-            flat = new WatchView(this);
-            flat.setExhibition(true);
-            android.widget.FrameLayout stack = new android.widget.FrameLayout(this);
-            stack.addView(flat);
-            veil = new View(this);
-            veil.setBackgroundColor(0xFF000000);
-            veil.setAlpha(0f);
-            stack.addView(veil);
-            setContentView(stack);
-            Watch3D.immersive(getWindow());
-            return;
-        }
         torch = new Gestures.Torch(this);
         web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); },
                 gesture -> Gestures.perform(this, gesture, this::unlock, torch));
@@ -97,14 +80,12 @@ public class LockScreenActivity extends Activity {
         fading = true;
         int fade = Math.max(1, Prefs.lockFade(this));
         if (web != null) web.evaluateJavascript("window.__lock&&__lock.fade(" + fade + ")", null);
-        if (veil != null) veil.animate().alpha(1f).setDuration(fade * 1000L).start();
         timer.postDelayed(goDark, fade * 1000L + 200);
     }
 
     private void dark() {
         darkened = true;
         if (tilt != null) tilt.stop();
-        if (flat != null) flat.setVisibility(View.INVISIBLE);   // stops its redraw loop
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         WindowManager.LayoutParams lp = getWindow().getAttributes();
         lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_OFF;   // the minimum
@@ -116,11 +97,6 @@ public class LockScreenActivity extends Activity {
         timer.removeCallbacks(goDark);
         if ((fading || darkened) && web != null) {
             web.evaluateJavascript("window.__lock&&__lock.wake()", null);
-        }
-        if (veil != null) veil.animate().alpha(0f).setDuration(250).start();
-        if (flat != null && flat.getVisibility() != View.VISIBLE) {
-            flat.setVisibility(View.VISIBLE);
-            flat.postInvalidate();
         }
         if (darkened && tilt != null && Prefs.gyro(this)) tilt.start();
         fading = darkened = false;

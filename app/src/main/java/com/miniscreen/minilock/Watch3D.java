@@ -57,6 +57,7 @@ final class Watch3D {
                     restorePlate(v);
                 }
                 applyCard(v);                 // the text under the watch follows its own switch
+                applyFlat(v);                 // 3D or 2D: the same watch, with or without depth
                 restorePlacement(v);          // size and position are not part of the design
                 if (onReady != null) onReady.run();      // state pushed before this was lost
             }
@@ -117,6 +118,12 @@ final class Watch3D {
                 Prefs.setPlacement(web.getContext(), v);
             }
         });
+    }
+
+    /** 3D or 2D: the same watch, in perspective with its shadow and orbit, or flat and head-on. */
+    static void applyFlat(WebView web) {
+        if (web == null) return;
+        web.evaluateJavascript("window.__lock&&__lock.setFlat(" + !Prefs.threeD(web.getContext()) + ")", null);
     }
 
     /** Paint the studio behind the watch the grey the user chose. */

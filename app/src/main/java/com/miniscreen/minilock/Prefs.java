@@ -24,7 +24,7 @@ final class Prefs {
     static void setBackground(Context c, int v) {
         get(c).edit().putInt("bg", v).putString("design", "custom").apply();
     }
-    /** The 3D pocket watch, or the flat dial (no WebGL, no gyroscope, lighter on the battery). */
+    /** The watch in perspective with its shadow and orbit, or the same watch flat and head-on. */
     static boolean threeD(Context c) { return get(c).getBoolean("threeD", true); }
     /** Whether the watch holds still in the world as the phone moves. */
     static boolean gyro(Context c) { return get(c).getBoolean("gyro", true); }
