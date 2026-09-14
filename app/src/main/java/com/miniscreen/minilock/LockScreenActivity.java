@@ -43,7 +43,10 @@ public class LockScreenActivity extends Activity {
         else getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         torch = new Gestures.Torch(this);
-        web = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); },
+        web = Watch3D.view(this, () -> {
+                    if (battery != null) battery.refresh();
+                    if (tilt != null) tilt.refresh();
+                },
                 gesture -> Gestures.perform(this, gesture, this::unlock, torch));
         setContentView(web);
         Watch3D.immersive(getWindow());   // after setContentView, or getInsetsController() is null

@@ -930,7 +930,7 @@ function persist(){
   plate.addEventListener("change",later,true); }
 let haveBase=false, lastSpin=0;
 let hud=null, hudAt=0, samples=0, testOffset=null, dark=false, darkTimer=0, flat=false;
-const qFlat=new THREE.Quaternion();  // identity: in 2D the camera never leaves head-on
+const qFlat=new THREE.Quaternion();  // 2D: the orbit clamped to the front of the wall
 function retarget(){                  // where the camera should be, relative to where it started
   qWanted.copy(qDevice);
   if(testOffset) qWanted.multiply(testOffset);   // a local turn, as if the hand had made it
@@ -946,13 +946,13 @@ window.__lock={
     if(haveBase) retarget();
   },
   face(){ return Math.cos(theta); },  // 1 dial toward you, -1 caseback; for tests from adb
-  setFlat(on){                        // 2D: the same watch, head-on, no depth, no orbit
+  setFlat(on){                        // 2D: the same watch with its back on the studio wall
+    // The gyroscope works exactly as in 3D, but the watch lies on the wall: you can look at it
+    // from an angle, never from behind, and the wall and the watch move together. The wall is
+    // fixed in the world here (in 3D it follows the camera), so it is made bigger to keep its
+    // edge out of an oblique view.
     flat=!!on;
-    // A very narrow field of view from far away is, to the eye, an orthographic view: the case
-    // shows no perspective, the bow and the dial sit in one plane. The fit keeps the size.
-    camera.fov = flat ? 4 : 26; camera.far = flat ? 600 : 100; camera.updateProjectionMatrix();
-    fitCamera(camera.aspect);
-    caster.castShadow = !flat;        // no cast shadow on a flat wall
+    backdrop.scale.setScalar(flat ? 2.4 : 1);
   },
   gyroReset(){                        // gyroscope switched off: back to head-on, re-baseline when it returns
     haveBase=false; qWanted.identity(); qSmooth.identity();
@@ -1063,7 +1063,13 @@ function applyCamera(){
   // The watch is a fixed object and the phone IS the camera: give the camera the device's
   // orientation, then stand it off by d along its own backward axis. The watch therefore stays
   // dead centre while you walk right around it, with no pole to tip over.
-  const q = flat ? qFlat : qSmooth;   // 2D: the orbit is not applied, the bow still rocks
+  let q=qSmooth;
+  if(flat){                           // on the wall: clamp the orbit to the front, 65 degrees each way
+    eul.setFromQuaternion(qSmooth,"YXZ");
+    const L=65*Math.PI/180;
+    eul.y=Math.max(-L,Math.min(L,eul.y)); eul.x=Math.max(-L,Math.min(L,eul.x));
+    qFlat.setFromEuler(eul); q=qFlat;
+  }
   camera.quaternion.copy(q);
   camBack.set(0,0,1).applyQuaternion(q).multiplyScalar(d);
   // Placement is a SCREEN offset: the user parks the watch somewhere on the glass and it must
@@ -1073,10 +1079,11 @@ function applyCamera(){
   camUp.set(0,1,0).applyQuaternion(q);
   camera.position.set(0,-0.15,0).add(camBack)
       .addScaledVector(camRight,userX).addScaledVector(camUp,userY-cardLift);
-  // The studio wall follows the camera: always square-on, six units behind the watch as it
-  // was built, so no orbit or tilt ever reaches its edge.
-  backdrop.quaternion.copy(q);
-  backdrop.position.copy(camBack).normalize().multiplyScalar(-6);
+  // In 3D the studio wall follows the camera: always square-on, six units behind the watch as
+  // it was built, so no orbit or tilt ever reaches its edge. In 2D it is fixed in the world,
+  // and the watch lies on it.
+  if(flat){ backdrop.quaternion.identity(); backdrop.position.set(0,0,-6); }
+  else { backdrop.quaternion.copy(q); backdrop.position.copy(camBack).normalize().multiplyScalar(-6); }
 }
 /* ---- carry: take the watch by its ring and put it anywhere on the screen ---- */
 // One finger on the bow moves the watch; one finger anywhere else still turns it over. These

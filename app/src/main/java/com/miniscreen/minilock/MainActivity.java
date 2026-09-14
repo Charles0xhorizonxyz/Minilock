@@ -98,7 +98,10 @@ public class MainActivity extends Activity {
         add(subtitle, 26);
 
         // The watch itself, in 3D. Tilt the phone and the light moves across the gold.
-        hero = Watch3D.view(this, () -> { if (battery != null) battery.refresh(); });
+        hero = Watch3D.view(this, () -> {
+            if (battery != null) battery.refresh();
+            if (tilt != null) tilt.refresh();              // the page's baseline, at once
+        });
         int width = (int) (getResources().getDisplayMetrics().widthPixels
                 / getResources().getDisplayMetrics().density);
         add(hero, Math.min(560, (int) (width * 1.45f)));   // tall enough for the dial to be legible
@@ -127,7 +130,7 @@ public class MainActivity extends Activity {
         preview.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
 
         textSize();
-        Switch threeD = row("3D watch", "Off: the same watch flat and head-on, without depth, shadow or the orbit");
+        Switch threeD = row("3D watch", "Off: the same watch with its back on the wall, seen from an angle but never from behind");
         threeD.setChecked(Prefs.threeD(this));
         threeD.setOnCheckedChangeListener((v, on) -> {
             Prefs.get(this).edit().putBoolean("threeD", on).apply();

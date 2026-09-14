@@ -24,6 +24,8 @@ final class TiltBridge implements SensorEventListener {
     private final WebView web;
     private final float[] quaternion = new float[4];
     private float sentW = 9f, sentX = 9f, sentY = 9f, sentZ = 9f;
+    private float lastW, lastX, lastY, lastZ;
+    private boolean haveLast;
 
     TiltBridge(Context context, WebView web) {
         this.web = web;
@@ -44,6 +46,18 @@ final class TiltBridge implements SensorEventListener {
         }
     }
 
+    /**
+     * Send the latest orientation again. The first sample usually arrives before the page has
+     * loaded and is lost; with the phone perfectly still no other follows, so the page would
+     * sit without a baseline until the first movement. Called once the page is ready.
+     */
+    void refresh() {
+        if (!haveLast || web == null) return;
+        sentW = lastW; sentX = lastX; sentY = lastY; sentZ = lastZ;
+        web.evaluateJavascript("window.__lock&&__lock.setQuat("
+                + lastW + "," + lastX + "," + lastY + "," + lastZ + ")", null);
+    }
+
     /** Never hold the sensor while the watch is not on screen. */
     void stop() {
         if (sensors != null) sensors.unregisterListener(this);
@@ -56,6 +70,7 @@ final class TiltBridge implements SensorEventListener {
         // and the orbit kept collapsing back to centre.
         SensorManager.getQuaternionFromVector(quaternion, e.values);   // [w, x, y, z]
         float w = quaternion[0], x = quaternion[1], y = quaternion[2], z = quaternion[3];
+        lastW = w; lastX = x; lastY = y; lastZ = z; haveLast = true;
         float moved = Math.abs(w - sentW) + Math.abs(x - sentX)
                 + Math.abs(y - sentY) + Math.abs(z - sentZ);
         if (moved < EPSILON) return;
