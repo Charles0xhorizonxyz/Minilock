@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.40**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.41**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -239,7 +239,7 @@ confirmed on-device (dial matched the phone's percent).
 
 | File | Role |
 |---|---|
-| `MainActivity.java` | The app screen. Hosts the watch WebView (`hero`), then the background slider, the "Reset to default" button and the Preview button, then the settings switches (Ambient, Sweep, Stand-in lock screen, Text under the watch, Screensaver — the last mirrors the system setting and opens it), wrapped in `ZoomScrollView` > `ZoomLayout`. |
+| `MainActivity.java` | The app screen. Hosts the watch WebView (`hero`), then the background slider, the "Reset to default" button and the Preview button, then the settings switches (Ambient, Sweep, Stand-in lock screen, Text under the watch, Screensaver, Display over other apps — the last two are `mirror()` switches that show a system state and open its page), wrapped in `ZoomScrollView` > `ZoomLayout`. |
 | `Watch3D.java` | Builds the WebView, loads `lock.html`, wires pinch (native `ScaleGestureDetector`), two-finger placement, card toggle, battery, immersive mode. **`immersive()` must be called AFTER `setContentView`** — calling `getInsetsController()` before returns null and crashes (this bit twice). |
 | `TiltBridge.java` | Gyroscope → `__lock.setQuat`. `GAME_ROTATION_VECTOR` (no magnetometer). |
 | `BatteryBridge.java` | Battery → `__lock.setBattery`. |

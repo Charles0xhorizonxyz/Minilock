@@ -26,8 +26,8 @@ public class MainActivity extends Activity {
     private BatteryBridge battery;
     private TiltBridge tilt;
     private SeekBar scale;                // the background slider, so a reset can move it
-    private Switch dream;                 // mirrors the system screensaver setting
-    private boolean refreshingDream;      // so a programmatic refresh is not taken as a tap
+    private Switch dream, overlay;        // mirror system settings the app cannot change itself
+    private boolean refreshing;           // so a programmatic refresh is not taken as a tap
 
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + .5f);
@@ -122,17 +122,16 @@ public class MainActivity extends Activity {
                 Prefs.card(this));
         screensaver();
 
-        TextView overlay = text("Allow display over other apps   ↗", 14, gold);
-        overlay.setPadding(0, dp(14), 0, 0);
-        overlay.setOnClickListener(v -> startActivity(new Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:" + getPackageName()))));
-        add(overlay, -2);
+        overlay = mirror("Display over other apps",
+                "Needed for the stand-in lock screen · tap to open the phone's permission page",
+                () -> Settings.canDrawOverlays(this),
+                () -> startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()))));
         TextView caution = text("Requires your real screen lock set to None. The phone is then not "
                 + "actually locked — Home escapes this, and no app can stop that. A stopgap "
                 + "until the custom build.", 12, 0xFFC98A8A);
         caution.setLineSpacing(dp(3), 1);
-        caution.setPadding(0, dp(8), 0, dp(28));
+        caution.setPadding(0, dp(16), 0, dp(28));
         add(caution, -2);
     }
 
@@ -151,18 +150,30 @@ public class MainActivity extends Activity {
     }
 
     private void screensaver() {
-        dream = row("Screensaver", "Minilock as the Android screensaver · tap to open the phone's screensaver settings");
-        dream.setChecked(isScreensaver());
-        dream.setOnCheckedChangeListener((v, on) -> {
-            if (refreshingDream) return;
-            refreshingDream = true;
-            v.setChecked(!on);                    // the system decides; show its state, not the tap
-            refreshingDream = false;
-            openScreensaverSettings();
+        dream = mirror("Screensaver",
+                "Minilock as the Android screensaver · tap to open the phone's screensaver settings",
+                this::isScreensaver, this::openScreensaverSettings);
+    }
+
+    /**
+     * A switch that mirrors a system setting the app cannot change itself. The switch shows
+     * the real state, and the whole row opens the system page where it is changed.
+     */
+    private Switch mirror(String title, String desc, java.util.function.BooleanSupplier state,
+                          Runnable open) {
+        Switch control = row(title, desc);
+        control.setChecked(state.getAsBoolean());
+        control.setOnCheckedChangeListener((v, on) -> {
+            if (refreshing) return;
+            refreshing = true;
+            v.setChecked(state.getAsBoolean());   // the system decides; show its state, not the tap
+            refreshing = false;
+            open.run();
         });
-        View line = (View) dream.getParent();     // the whole row is the way in
+        View line = (View) control.getParent();   // the whole row is the way in
         line.setClickable(true);
-        line.setOnClickListener(v -> openScreensaverSettings());
+        line.setOnClickListener(v -> open.run());
+        return control;
     }
 
     private void openScreensaverSettings() {
@@ -285,11 +296,10 @@ public class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
-        if (dream != null) {
-            refreshingDream = true;
-            dream.setChecked(isScreensaver());
-            refreshingDream = false;
-        }
+        refreshing = true;                        // the system may have been changed meanwhile
+        if (dream != null) dream.setChecked(isScreensaver());
+        if (overlay != null) overlay.setChecked(Settings.canDrawOverlays(this));
+        refreshing = false;
         if (hero != null) hero.onResume();
         if (tilt != null) tilt.start();
         if (battery != null) battery.start();

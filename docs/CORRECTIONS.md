@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.40**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.41**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -116,6 +116,7 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 61 | Put the Preview button above Ambient mode | **Done and verified** — v0.0.38. |
 | 62 | Make the whole Screensaver row open the phone's screensaver settings | **Done and verified** — v0.0.38. Tapping the label opened Android's screensaver page. |
 | 63 | The background colours look artificial; make them natural | **Done and verified** — v0.0.39. The pure spectrum hues are replaced by eight seamless-paper tones in the same order (ivory, rose clay, ochre, sage, teal grey, slate blue, plum, charcoal), interpolated on the page and painted on the slider's track alike. Seen on the phone at sage, rose clay and ivory. v0.0.40 also makes the studio wall follow the camera, so a tilt no longer shows its edge cutting across the corner, which the light tones had made obvious. |
+| 64 | Make "Allow display over other apps" a toggle like the others | **Done and verified** — v0.0.41. The switch mirrors the real permission state and the whole row opens the phone's permission page, the same way the Screensaver row does; both refresh when you come back. Verified: reads ON, matching the phone, and tapping the row opened the system page. |
 
 ---
 

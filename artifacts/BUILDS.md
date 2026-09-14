@@ -45,6 +45,7 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.38-debug.apk` | 0.0.38 | 2026-09-14 11:09 | 259,636 B | `c5f4dd26cddc36f9` | "Reset watch size and position" becomes an outlined "Reset to default" button that clears the placement and puts the background back to the dark studio, moving the slider with it. The Preview button moves up above Ambient mode. The whole Screensaver row opens the phone's screensaver settings. Layout only, plus the v0.0.36/37 changes. |
 | `Minilock-v0.0.39-debug.apk` | 0.0.39 | 2026-09-14 11:15 | 259,712 B | `751d7cc40cb442cb` | Natural background tones: the spectrum hues are replaced by eight seamless-paper stops (ivory, rose clay, ochre, sage, teal grey, slate blue, plum, charcoal), interpolated on the page and drawn on the slider's track alike. Same slider, same stored value. |
 | `Minilock-v0.0.40-debug.apk` | 0.0.40 | 2026-09-14 11:16 | 259,812 B | `302341ca6b71d70a` | The studio wall follows the camera (square-on, six units behind the watch), so the gyroscope orbit never shows its edge. |
+| `Minilock-v0.0.41-debug.apk` | 0.0.41 | 2026-09-14 11:23 | 260,380 B | `f7d277a59af91e96` | "Allow display over other apps" becomes a switch like the others: it mirrors the real permission state and the whole row opens the phone's permission page. Screensaver and overlay now share one mirrored-switch helper. Layout only. |
 
 ## Conventions
 
