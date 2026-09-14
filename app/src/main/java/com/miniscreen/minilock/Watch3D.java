@@ -50,14 +50,7 @@ final class Watch3D {
         web.addJavascriptInterface(new PlateStore(context, onGesture), "minilock");
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView v, String url) {
-                // Factory design: the page's own gold, dial and studio, which is the look that
-                // used to flash for an instant before the saved choices landed on top of it.
-                if (!Prefs.factory(context)) {
-                    applyBackground(v);
-                    restorePlate(v);
-                }
-                applyCard(v);                 // the text under the watch follows its own switch
-                applyFlat(v);                 // 3D or 2D: the same watch, with or without depth
+                sync(v);
                 restorePlacement(v);          // size and position are not part of the design
                 if (onReady != null) onReady.run();      // state pushed before this was lost
             }
@@ -118,6 +111,31 @@ final class Watch3D {
                 Prefs.setPlacement(web.getContext(), v);
             }
         });
+    }
+
+    /** The page's own plate, for the Factory design. */
+    private static final String FACTORY_PLATE = "{\"finish\":0,\"ambient\":false,\"sweep\":true,"
+            + "\"bottom\":\"power\",\"weather\":true,\"alerts\":true,\"alarm\":true,\"event\":true}";
+
+    /**
+     * Bring a page up to the current preferences: design, background, plate, text, 3D or 2D.
+     * Called when the page loads and every time its surface comes to the front, because the
+     * lock screen is staged in the background and can stay alive across many wakes (and Home
+     * leaves it alive), so a setting changed in the app would otherwise never reach it.
+     */
+    static void sync(WebView web) {
+        if (web == null) return;
+        if (Prefs.factory(web.getContext())) {
+            // Factory: the page's own gold, dial and studio, which is the look that used to
+            // flash for an instant before the saved choices landed on top of it.
+            web.evaluateJavascript("window.__lock&&(__lock.setBackground(0),__lock.setState("
+                    + org.json.JSONObject.quote(FACTORY_PLATE) + "))", null);
+        } else {
+            applyBackground(web);
+            restorePlate(web);
+        }
+        applyCard(web);                       // the text under the watch follows its own switch
+        applyFlat(web);                       // 3D or 2D
     }
 
     /** 3D or 2D: the same watch, in perspective with its shadow and orbit, or flat and head-on. */

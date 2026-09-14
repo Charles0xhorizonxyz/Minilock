@@ -34,7 +34,7 @@ public class PreviewActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
-        if (web != null) web.onResume();
+        if (web != null) { web.onResume(); Watch3D.sync(web); }
         if (tilt != null && Prefs.gyro(this)) tilt.start();
         if (battery != null) battery.start();
     }
