@@ -54,8 +54,9 @@ def battery():
 
 
 def since_charge():
-    uid = re.search(r"userId=(\d+)", sh("dumpsys", "package", PKG))
-    uid = uid.group(1) if uid else "?"
+    m = re.search(r"uid:(\d+)", sh("cmd", "package", "list", "packages", "-U", PKG))
+    uid = m.group(1) if m else "?"
+    tag = "u0a%d" % (int(uid) - 10000) if uid != "?" else "?"
     stats = sh("dumpsys", "batterystats", "--charged")
     lines = stats.splitlines()
     screen = next((l.strip() for l in lines if l.strip().startswith("Screen on:")), "Screen on: ?")
@@ -66,12 +67,12 @@ def since_charge():
             grab = True
             continue
         if grab:
-            if not l.strip() or l.strip().startswith("All partial wake locks") or "Per-app mobile" in l:
-                if use:
-                    break
-                continue
-            use.append(l.rstrip())
-            if len(use) > 25:
+            t = l.strip()
+            if t.startswith(("Capacity:", "screen:", "GPU:", "wakelock:", "mobile_radio:", "wifi:")) and len(use) < 8:
+                use.append("   " + t)                       # the global picture
+            if t.startswith("UID " + tag + ":"):
+                use.append("   MINILOCK  " + t)             # our line: total, fg (activity on screen), fgs (service)
+            if t.startswith("All partial wake locks") or "Per-app mobile" in t:
                 break
     app = sh("dumpsys", "batterystats", "--charged", PKG)
     keep = [l.strip() for l in app.splitlines()
@@ -86,7 +87,7 @@ def main():
     print(f"phone {DEVICE}   battery {level}%   charge counter {counter} uAh   plugged: {plugged}")
     uid, screen, use, keep = since_charge()
     print(f"\nSince the last charge   ({screen})")
-    print(f"  Minilock uid {uid}. Estimated power use, mAh, top entries (look for uid {uid} and 'Screen'):")
+    print(f"  Estimated power use in mAh. 'fg' is with the watch on screen, 'fgs' the resident service:")
     for l in use:
         print("   " + l)
     print("  Minilock detail:")
