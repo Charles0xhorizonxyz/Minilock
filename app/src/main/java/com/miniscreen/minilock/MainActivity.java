@@ -121,7 +121,7 @@ public class MainActivity extends Activity {
         toggle("Stand-in lock screen", "The 3D watch when the screen wakes", "lock",
                 Prefs.lock(this));
         choice("Flick right to left", "One turn of the dial on the lock screen", Gestures.LEFT1);
-        choice("Flick left to right, twice", "Two turns of the dial on the lock screen", Gestures.RIGHT2);
+        choice("Spin left to right, two turns", "One hard flick that turns the dial twice on the lock screen", Gestures.RIGHT2);
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
                 Prefs.card(this));
         screensaver();

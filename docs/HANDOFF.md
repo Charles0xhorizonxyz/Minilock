@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.44**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.45**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -87,14 +87,17 @@ the instant the screen wakes and never launches after the system's double-tap-po
 SCREEN_ON only launches it if nothing was staged. `input keyevent KEYCODE_POWER KEYCODE_POWER`
 reproduces the camera gesture from adb. Since v0.0.42/44 flicks of the dial are gestures: the
 page's `maybeGesture` names them ("left1": one flick right to left from the front; "right2":
-two flicks left to right within 1.5 s) and calls `minilock.gesture(name)`; `Watch3D.view`
+one hard flick left to right that carries the watch two full turns, armed at release and
+decided frame by frame in `spinCheck` at 3.5 pi from where the finger landed) and calls
+`minilock.gesture(name)`; `Watch3D.view`
 takes an `onGesture` consumer that only `LockScreenActivity` passes, and `Gestures.perform`
 runs the user's choice from Prefs `g_left1`/`g_right2` (defaults unlock / camera; options none,
 unlock, camera, torch, app, alarms; two dropdown rows in the app). `__lock.face()` returns cos
 of the turn angle (1 dial, -1 caseback) so a test can check the face first. Real `input swipe`
 flicks work but collide with the user's fingers; the reliable test dispatches synthetic pointer
-events inside the page with in-page `setTimeout` timing (a flick must finish within 1 s, the
-two flicks within 1.5 s, which round-trips through page-eval cannot do). Swipe up still
+events inside the page with in-page `setTimeout` timing (a flick must finish within 1 s, which
+round-trips through page-eval cannot do; a two-turn flick needs two quick moves before the up
+so the release velocity is high). Swipe up still
 dismisses. `BootReceiver` also restarts the service on `MY_PACKAGE_REPLACED`, so the watch is
 staged straight after an install.
 

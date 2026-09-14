@@ -1018,6 +1018,7 @@ window.__lock={
   },
 };
 function applyCamera(){
+  spinCheck();                        // a flick that carries two turns is a gesture
   // Orbit the CAMERA rather than rotating the scene: the watch and the studio stay fixed in
   // world space, so tilting sweeps the environment map across the gold the way it would across
   // real metal. Rotating the scene would carry the lights along and kill the effect.
@@ -1060,17 +1061,23 @@ let carrying=false, carryX=0, carryY=0;
 /* ---- the lock screen's gestures: flicks of the dial, named here, acted on by the app ---- */
 // A flick is a decisive horizontal drag: more than a fifth of the width, mostly sideways, under
 // a second. "left1" is one flick right-to-left from the front (the caseback keeps its taps).
-// "right2" is two flicks left-to-right within a second and a half, whichever face. Carrying by
-// the ring never reaches release, so it never counts. What each does is the user's choice, in
-// the app; the page only names them.
-let swipeX0=0, swipeY0=0, swipeT0=0, frontAtDown=true, rightFlicks=0, lastRightAt=-1e9;
+// "right2" is one hard flick left-to-right that carries the watch through two full turns: the
+// flick arms it, and the spin is watched frame by frame until it either crosses the barrier
+// before its second full turn (then it cannot settle short of two) or comes to rest. Carrying
+// by the ring never reaches release, so it never counts. What each does is the user's choice,
+// in the app; the page only names them.
+let swipeX0=0, swipeY0=0, swipeT0=0, frontAtDown=true, thetaAtDown=0, spinArmed=false, spinFrom=0;
+const fireGesture=g=>{ if(window.minilock && minilock.gesture) minilock.gesture(g); };
 function maybeGesture(e){
   const dx=e.clientX-swipeX0, dy=e.clientY-swipeY0, now=performance.now();
   if(Math.abs(dx)<innerWidth*0.22 || Math.abs(dx)<1.5*Math.abs(dy) || now-swipeT0>1000) return;
-  const fire=g=>{ if(window.minilock && minilock.gesture) minilock.gesture(g); };
-  if(dx<0){ rightFlicks=0; if(frontAtDown) fire("left1"); return; }
-  rightFlicks = (now-lastRightAt<1500) ? rightFlicks+1 : 1; lastRightAt=now;
-  if(rightFlicks>=2){ rightFlicks=0; fire("right2"); }
+  if(dx<0){ spinArmed=false; if(frontAtDown) fireGesture("left1"); return; }
+  spinArmed=true; spinFrom=thetaAtDown;        // rightward: now watch how far it carries
+}
+function spinCheck(){
+  if(!spinArmed) return;
+  if(theta-spinFrom >= 3.5*Math.PI){ spinArmed=false; fireGesture("right2"); }
+  else if(!dragging && Math.abs(omega)<0.05) spinArmed=false;   // at rest, short of two turns
 }
 function overBow(e){
   bowPos.set(0,1.452,0).applyMatrix4(spin.matrixWorld).project(camera);
@@ -1081,7 +1088,7 @@ function overBow(e){
 }
 glCanvas.addEventListener("pointerdown",e=>{
   if(!e.isPrimary){ carrying=false; return; }   // a second finger hands over to placement
-  swipeX0=e.clientX; swipeY0=e.clientY; swipeT0=performance.now(); frontAtDown=Math.cos(theta)>0.5;
+  swipeX0=e.clientX; swipeY0=e.clientY; swipeT0=performance.now(); frontAtDown=Math.cos(theta)>0.5; thetaAtDown=theta;
   if(!overBow(e)) return;
   carrying=true; carryX=e.clientX; carryY=e.clientY; dragging=false;
   glCanvas.setPointerCapture(e.pointerId);
