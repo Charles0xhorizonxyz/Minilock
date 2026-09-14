@@ -615,12 +615,12 @@ const camera=new THREE.PerspectiveCamera(26,1,0.1,100);
 camera.position.set(0,-0.15,9.2);
 camera.lookAt(0,-0.15,0);
 
-function backdropTex(white){
+function backdropTex(tint){         // tint: nothing for the studio, else [r,g,b] in 0..1
   const c=document.createElement("canvas"); c.width=c.height=512;
   const g=c.getContext("2d");
-  const w=Math.max(0,Math.min(1,white||0));
-  const grey=v=>{ const h=Math.round(Math.max(0,Math.min(1,v))*255).toString(16).padStart(2,"0"); return "#"+h+h+h; };
-  const stop=(lift,sink)=> w ? grey(w+(1-w)*lift-w*w*sink) : null;
+  const hex=v=>"#"+v.map(x=>Math.round(Math.max(0,Math.min(1,x))*255).toString(16).padStart(2,"0")).join("");
+  const toward=(col,to,k)=>col.map((x,i)=>x+(to[i]-x)*k);
+  const stop=(lift,sink)=> tint ? hex(toward(toward(tint,[1,1,1],lift),[0,0,0],sink)) : null;
   const c0=stop(.16,0)||"#2B313A", c1=stop(.08,.02)||"#171B21", c2=stop(.03,.05)||"#0B0D11", c3=stop(0,.08)||"#040507";
   g.fillStyle=c3; g.fillRect(0,0,512,512);
   const rg=g.createRadialGradient(250,196,10,256,250,320);
@@ -897,7 +897,16 @@ function fitCamera(aspect){
 const qDevice=new THREE.Quaternion(), qBase=new THREE.Quaternion(),
       qWanted=new THREE.Quaternion(), qSmooth=new THREE.Quaternion(),
       camBack=new THREE.Vector3(), camRight=new THREE.Vector3(), camUp=new THREE.Vector3();
-var bgWhite=0;                        // 0 = the dark studio, 1 = white; a user setting
+var bgWhite=0;                        // luminance of the chosen background; 0 for the dark studio
+function bgColour(v){                 // the slider: 1 is white, 0 the dark studio, a rainbow between
+  if(v<=0) return null;
+  const hsl=(h,s,l)=>{ const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l);
+    const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1)); return [f(0),f(8),f(4)]; };
+  const lo=1/7, hi=6/7;               // the same seven stops as the slider's track in the app
+  if(v>=hi){ const k=(v-hi)/(1-hi); return [1,0,0].map((r,i)=>r+(1-r)*k); }   // red -> white
+  if(v<=lo) return hsl(270,1,.5).map(x=>x*(v/lo));                              // black -> violet
+  return hsl((hi-v)/(hi-lo)*270,1,.5);                                          // red -> violet
+}
 /* ---- the caseback plate is remembered ---- */
 // The page cannot write preferences, so it hands the plate's state to the app through the
 // `minilock` interface on every change, and the app gives it back with setState on load.
@@ -984,12 +993,12 @@ window.__lock={
       }
     } finally { restoring=false; }
   },
-  setBackground(white){               // the scale from white to black, behind the watch
-    bgWhite=Math.max(0,Math.min(1,+white||0));
+  setBackground(v){                   // the scale: white, through the rainbow, to the dark studio
+    const tint=bgColour(Math.max(0,Math.min(1,+v||0)));
+    bgWhite=tint?0.2126*tint[0]+0.7152*tint[1]+0.0722*tint[2]:0;   // luminance; the card's ink follows it
     const m=backdrop.material; if(m.map) m.map.dispose();
-    m.map=backdropTex(bgWhite); m.needsUpdate=true;
-    const v=Math.round((bgWhite-bgWhite*bgWhite*0.08)*255);   // the backdrop's edge grey
-    const css=bgWhite?"rgb("+v+","+v+","+v+")":"#000";
+    m.map=backdropTex(tint); m.needsUpdate=true;
+    const css=tint?"rgb("+tint.map(x=>Math.round(x*0.92*255)).join(",")+")":"#000";   // the edge shade
     document.body.style.background=css;
     const screen=document.getElementById("screen"); if(screen) screen.style.background=css;
     cardAt=-1e9;                      // repaint the text under the watch in the right ink

@@ -179,21 +179,24 @@ public class MainActivity extends Activity {
         content.addView(line, new LinearLayout.LayoutParams(-1, dp(1)));
     }
 
-    /** A scale from white to black for the studio behind the watch, on every surface. */
+    /** White, through the rainbow, to black: the studio behind the watch, on every surface. */
     private void background() {
         LinearLayout labels = new LinearLayout(this);
         labels.setOrientation(LinearLayout.VERTICAL);
         labels.setPadding(0, dp(15), 0, dp(4));
         labels.addView(text("Background", 16, 0xFFE7E4DF));
-        TextView description = text("From white to black, behind the watch everywhere", 12, muted);
+        TextView description = text("White to black through the rainbow, behind the watch everywhere", 12, muted);
         description.setPadding(0, dp(5), 0, 0);
         labels.addView(description);
         add(labels, -2);
 
         SeekBar scale = new SeekBar(this);
         scale.setMax(100);
+        // Seven even stops; the page maps the value to the same colours (see bgColour in the
+        // generator), so the track shows exactly what the backdrop will be.
         GradientDrawable track = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[] {0xFFFFFFFF, 0xFF000000});
+                new int[] {0xFFFFFFFF, 0xFFFF0000, 0xFFFFFF00, 0xFF00FF00,
+                           0xFF00FFFF, 0xFF0000FF, 0xFF8000FF, 0xFF000000});
         track.setCornerRadius(dp(4));
         track.setSize(dp(200), dp(8));
         track.setStroke(dp(1), 0xFF3A424B);            // so the black end still has an edge

@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.30**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.31**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -175,10 +175,13 @@ CAMERA, so the watch goes the other way.
 
 ### 4. Background scale and carry by the ring (v0.0.29)
 
-Both shipped in v0.0.29. **Background**: a `SeekBar` in the app (white left, black right) writes
-Prefs `bg` (0 = the dark studio, 100 = white); `Watch3D.applyBackground` pushes it on page load
-and live while sliding; `__lock.setBackground` regenerates the backdrop texture with the same
-vignette in neutral grey and repaints the card text in dark ink above 50. Verified on the phone.
+Both shipped in v0.0.29; the scale became a rainbow in v0.0.31. **Background**: a `SeekBar` in
+the app whose track runs white, red, yellow, green, cyan, blue, violet, black (seven even stops)
+writes Prefs `bg` (0 = the dark studio, 100 = white); `Watch3D.applyBackground` pushes it on
+page load and live while sliding; `bgColour(v)` in the generator maps the value to the same
+seven stops (linear hue 0→270 between 6/7 and 1/7, red→white above, violet→black below) and
+`__lock.setBackground` regenerates the backdrop texture in that colour with the usual vignette;
+the card's ink follows the colour's luminance. Verified on the phone.
 **Carry**: capture-phase pointer listeners on the canvas hit-test the bow (local `(0, 1.452, 0)`
 projected to the screen, reach `max(30px, 10% of width)`), call `__lock.nudge` per move, and
 stop the event so the turn handler never starts; a second finger hands over to the native
