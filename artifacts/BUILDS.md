@@ -53,6 +53,7 @@ Every APK we build is kept here. Never overwrite an entry; add a new row.
 | `Minilock-v0.0.46-debug.apk` | 0.0.46 | 2026-09-14 20:53 | 266,136 B | `cd1e9d7941c75a66` | A Design choice, Factory or Custom, at the top of the settings list. Factory shows the watch exactly as designed on every surface (24k gold, bright dial, sweep, dark studio, text under the watch): the look that used to flash for an instant before the saved choices landed. Custom is the saved caseback, background and text; any change to those flips the design back to Custom. Size and position are separate. |
 | `Minilock-v0.0.47-debug.apk` | 0.0.47 | 2026-09-14 21:00 | 266,108 B | `64f59911a15ca938` | The text under the watch follows its own switch in both designs; Factory is only the gold, the dial and the studio, and the text switch no longer flips the design to Custom. |
 | `Minilock-v0.0.48-debug.apk` | 0.0.48 | 2026-09-14 21:05 | 266,608 B | `cb3bd0225e3828d6` | Dropdowns aligned right: the selected text ends flush with the switches' edge and the list opens with its right edge on that line. Layout only. |
+| `Minilock-v0.0.49-debug.apk` | 0.0.49 | 2026-09-14 21:08 | 266,248 B | `116b413c35aa5a0d` | Dropdown lists open as exactly the dropdown's own box (fixed 176dp, right-aligned text), so the list's right edge is the switches' edge; the v0.0.48 offset had been pushed to the screen edge and clipped. |
 
 ## Conventions
 

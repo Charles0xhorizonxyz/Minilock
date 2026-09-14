@@ -262,11 +262,8 @@ public class MainActivity extends Activity {
         pick.setPadding(0, 0, 0, 0);                       // the old background's padding stays otherwise
         pick.setGravity(Gravity.END);
         pick.setPopupBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0xFF131921));
-        // The list opens with its right edge on the spinner's right edge, not hanging off it.
-        final int menuWidth = dp(230);
-        pick.setDropDownWidth(menuWidth);
-        pick.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
-                pick.setDropDownHorizontalOffset(Math.min(0, (r - l) - menuWidth)));
+        // The list opens as exactly the spinner's own box, so it ends where the text ends.
+        pick.setDropDownWidth(ViewGroup.LayoutParams.MATCH_PARENT);
         pick.setSelection(selected, false);
         pick.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             private int last = selected;
@@ -278,7 +275,7 @@ public class MainActivity extends Activity {
             }
             @Override public void onNothingSelected(AdapterView<?> p) { }
         });
-        row.addView(pick, new LinearLayout.LayoutParams(-2, -2));
+        row.addView(pick, new LinearLayout.LayoutParams(dp(176), -2));   // wide enough for the list
         add(row, -2);
         View line = new View(this);
         line.setBackgroundColor(0xFF252A30);
