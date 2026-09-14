@@ -31,6 +31,7 @@ public class MainActivity extends Activity {
     private TiltBridge tilt;
     private SeekBar scale;                // the background slider, so a reset can move it
     private Switch dream, overlay;        // mirror system settings the app cannot change itself
+    private Spinner design;               // Factory or Custom; flips to Custom when anything is changed
     private boolean refreshing;           // so a programmatic refresh is not taken as a tap
 
     private int dp(float value) {
@@ -115,6 +116,13 @@ public class MainActivity extends Activity {
         preview.getLayoutParams().height = dp(52);
         preview.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
 
+        design = dropdown("Design",
+                "Factory: the watch as designed. Custom: your caseback, background and text choices",
+                new String[] {"Factory", "Custom"}, new String[] {"factory", "custom"},
+                Prefs.factory(this) ? 0 : 1, key -> {
+                    Prefs.setFactory(this, "factory".equals(key));
+                    if (hero != null) hero.reload();
+                });
         toggle("Ambient mode", "Dimmed dial · seconds hidden · gentle drift", "ambient",
                 Prefs.ambient(this));
         toggle("Sweeping seconds", "A fluid, mechanical rhythm", "sweep", Prefs.sweep(this));
@@ -195,12 +203,32 @@ public class MainActivity extends Activity {
         control.setChecked(checked);
         control.setOnCheckedChangeListener((v, on) -> {
             Prefs.get(this).edit().putBoolean(key, on).apply();
-            if ("card".equals(key)) Watch3D.applyCard(hero);   // no need to wait for a reload
+            if ("card".equals(key)) {
+                Prefs.setFactory(this, false);                 // the text is part of the design
+                markCustom();
+                Watch3D.applyCard(hero);                       // no need to wait for a reload
+            }
         });
+    }
+
+    /** The Design row follows a change made elsewhere on this screen. */
+    private void markCustom() {
+        if (design == null) return;
+        refreshing = true;
+        design.setSelection(1, false);
+        refreshing = false;
     }
 
     /** A settings row with a dropdown of lock-screen actions on the right. */
     private void choice(String title, String desc, String prefKey) {
+        dropdown(title, desc, Gestures.NAMES, Gestures.KEYS,
+                Gestures.indexOf(Prefs.gesture(this, prefKey, Gestures.defaultFor(prefKey))),
+                key -> Prefs.setGesture(this, prefKey, key));
+    }
+
+    /** A settings row with a dropdown on the right; onPick gets the chosen key, user taps only. */
+    private Spinner dropdown(String title, String desc, String[] names, String[] keys,
+                             int selected, java.util.function.Consumer<String> onPick) {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(0, dp(15), 0, dp(10));
@@ -214,10 +242,10 @@ public class MainActivity extends Activity {
 
         Spinner pick = new Spinner(this);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_spinner_item, Gestures.NAMES) {
+                android.R.layout.simple_spinner_item, names) {
             @Override public View getView(int pos, View convert, ViewGroup parent) {
                 TextView t = (TextView) super.getView(pos, convert, parent);
-                t.setText(Gestures.NAMES[pos] + "  \u25BE");
+                t.setText(names[pos] + "  \u25BE");
                 t.setTextColor(gold);
                 t.setTextSize(14);
                 t.setGravity(Gravity.END);
@@ -235,10 +263,14 @@ public class MainActivity extends Activity {
         pick.setAdapter(adapter);
         pick.setBackground(null);                          // the text carries its own arrow
         pick.setPopupBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0xFF131921));
-        pick.setSelection(Gestures.indexOf(Prefs.gesture(this, prefKey, Gestures.defaultFor(prefKey))));
+        pick.setSelection(selected, false);
         pick.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            private int last = selected;
             @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
-                Prefs.setGesture(MainActivity.this, prefKey, Gestures.KEYS[pos]);
+                if (refreshing) { last = pos; return; }    // a refresh, not a tap
+                if (pos == last) return;                   // the initial selection
+                last = pos;
+                onPick.accept(keys[pos]);
             }
             @Override public void onNothingSelected(AdapterView<?> p) { }
         });
@@ -247,6 +279,7 @@ public class MainActivity extends Activity {
         View line = new View(this);
         line.setBackgroundColor(0xFF252A30);
         content.addView(line, new LinearLayout.LayoutParams(-1, dp(1)));
+        return pick;
     }
 
     /** A settings row with a switch on the right; the caller decides what the switch does. */
@@ -305,6 +338,7 @@ public class MainActivity extends Activity {
             @Override public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
                 if (!fromUser) return;
                 Prefs.setBackground(MainActivity.this, 100 - p);
+                markCustom();
                 Watch3D.applyBackground(hero);              // live, so you see it as you slide
             }
             @Override public void onStartTrackingTouch(SeekBar s) { }
@@ -353,6 +387,7 @@ public class MainActivity extends Activity {
         refreshing = true;                        // the system may have been changed meanwhile
         if (dream != null) dream.setChecked(isScreensaver());
         if (overlay != null) overlay.setChecked(Settings.canDrawOverlays(this));
+        if (design != null) design.setSelection(Prefs.factory(this) ? 0 : 1, false);
         refreshing = false;
         if (hero != null) hero.onResume();
         if (tilt != null) tilt.start();
