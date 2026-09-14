@@ -273,7 +273,9 @@ function arcText(g,str,r,midDeg,step,size,color,serif,bottom){
   chars.forEach((ch,i)=>{
     const off=(i*step-span/2)*(bottom?-1:1);
     g.save();g.rotate(off*RAD);
-    if(bottom){g.translate(0,r);g.rotate(Math.PI);} else g.translate(0,-r);
+    // Bottom text reads left to right with the tops of the letters toward the centre, as on a
+    // coin. Rotating each glyph by a half turn here put the lower engraving upside down.
+    g.translate(0,bottom?r:-r);
     g.fillText(ch,0,0);g.restore();
   });
   g.textBaseline="alphabetic";
@@ -641,7 +643,9 @@ function metalMat(hexColor,rough){
 /* A watch case reads as metal because of the transitions between finishes, so the case is
    three lathes rather than one: polished bezel, satin band, polished caseback rim. The
    profiles share endpoints, so the joins are continuous but the materials are not. */
-const FRONT_Z=0.147, BACK_Z=-0.162, CRYSTAL_Z=0.156;
+// The caseback profile closes flat at z=-0.168, so the engraved disc must sit proud of it, as the
+// dial sits 0.007 proud of the bezel's flat at 0.140. At -0.162 it was buried inside the solid.
+const FRONT_Z=0.147, BACK_Z=-0.175, CRYSTAL_Z=0.156;
 
 const P_BEZEL=[[0.000,0.140],[0.845,0.140],[0.862,0.156],[0.884,0.172],
                [0.920,0.180],[0.952,0.174],[0.976,0.150],[0.988,0.122],[0.992,0.096]];

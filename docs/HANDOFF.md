@@ -5,7 +5,7 @@ continue autonomously. Read it fully before touching anything. The user has swit
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.31**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.34**. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
@@ -189,7 +189,22 @@ two-finger placement. Native saves the placement on every `ACTION_UP` in `enable
 Verified in the page with synthetic events; **not yet with a real finger**. Placement is now a
 screen-space offset (camera right/up), so it survives the gyroscope orbit.
 
-### 5. The caseback plate is remembered (v0.0.30)
+### 5. The caseback controls are painted on the metal (v0.0.32–v0.0.34)
+
+The HTML plate (`#plate`) is hidden by CSS and kept only as the state model. `backControls(g,F)`
+in the generator draws the alloy medallions, six slide levers and the counter selector into the
+caseback texture after `backArt`, by wrapping `paintBack`; it records `backRegions` in design
+units (the caseback canvas is set up so 291 = the rim, y down). A tap (`release(e)` with
+`moved<5`, back facing within cos 0.8 and |omega| < 0.6) ray-casts onto `backMesh`, converts
+the hit's uv to design units (`x=(u-.5)*582, y=(.5-v)*582`) and runs the region's action,
+which clicks or changes the hidden plate's own control, so wiring and persistence are untouched,
+then repaints. Because the controls are in the texture they follow the watch exactly under the
+gyroscope orbit, which the overlay never could. Two long-standing artwork bugs surfaced with
+it: `BACK_Z` had the textured disc 0.006 inside the solid caseback (now −0.175, proud of the
+flat at −0.168), and `arcText` rotated bottom glyphs by a half turn (now upright). Both fixed
+in `tools/watch3d.html`, the source.
+
+### 6. The caseback plate is remembered (v0.0.30)
 
 The plate on the back of the watch (finish, movement toggles, counter at six) used to live only
 in the page, so it reset with every new page — that was the user's "the colour is not kept". The
@@ -204,7 +219,7 @@ flat dial; the 3D watch reads the plate. The "Set as screensaver" button on the 
 edge of the studio backdrop (an 18×18 plane at z=−6) with the page's flat colour beyond it. A
 backdrop that follows the camera direction, or a much larger one, would remove that.
 
-### 6. "Edges cut off" (root cause found; framing never exercised)
+### 7. "Edges cut off" (root cause found; framing never exercised)
 
 Root cause is item 1. After the reset, check the framing on the preview: the whole case with
 the bow should fit with a margin. If it does not, the fit constants `NEED_W`/`NEED_H` in the

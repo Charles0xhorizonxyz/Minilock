@@ -42,6 +42,7 @@ header,.panel,.notes,.stage>p,.readout{display:none!important}
 .stage{margin:0}
 .screen{aspect-ratio:auto;width:100vw;height:100vh;border:0;border-radius:0;touch-action:none}
 .cardwrap{bottom:6%}
+.plate{display:none!important}
 #gyrohud{position:fixed;left:0;right:0;top:max(14px,env(safe-area-inset-top));text-align:center;
   font:11px/1.4 monospace;color:#8a93a0;pointer-events:none;z-index:9;white-space:pre}
 </style>""")
@@ -49,7 +50,8 @@ header,.panel,.notes,.stage>p,.readout{display:none!important}
 # A tap must not turn the watch over: it collides with double-tap-to-zoom, and the handler is
 # registered by value so it cannot be wrapped afterwards. Drag still turns it.
 sub("  if(moved<5) windOver();                    // a tap winds it, a drag keeps its speed",
-    "  // a tap deliberately does nothing here: it collided with double-tap-to-zoom")
+    "  if(moved<5 && e && e.type===\"pointerup\") tapBack(e);   // a tap on the caseback works its controls")
+sub("function release(){", "function release(e){")
 
 # The plate on the caseback had a "Set as screensaver" button that only ever changed its own
 # label; the app has the real one. Gone, markup and wiring both.
@@ -230,6 +232,7 @@ window.__lock={
         const el=document.getElementById(flags[k]);
         if(el && el.checked!==!!s[k]){ el.checked=!!s[k]; el.dispatchEvent(new Event("change",{bubbles:true})); }
       }
+      paintBack();
     } finally { restoring=false; }
   },
   setBackground(v){                   // the scale: white, through the rainbow, to the dark studio
@@ -306,6 +309,86 @@ glCanvas.addEventListener("pointermove",e=>{
 function putDown(e){ if(!carrying) return; carrying=false; e.stopImmediatePropagation(); }
 glCanvas.addEventListener("pointerup",putDown,{capture:true});
 glCanvas.addEventListener("pointercancel",putDown,{capture:true});
+
+
+/* ---- the caseback controls, painted into the caseback itself ---- */
+// The HTML plate is hidden. These are drawn into the same texture as the engraving, in the
+// dial's own language -- gold, engraved captions, cut slots, knurled sliders -- so they sit ON
+// the metal and follow it through every turn and tilt. A tap is ray-cast onto the caseback.
+let backRegions=[];
+const LEVERS=[["mAmbient","AMBIENT"],["mSweep","SWEEP"],["mWeather","WEATHER"],
+              ["mAlerts","ALERTS"],["mAlarm","ALARM"],["mEvent","AGENDA"]];
+const SIX=[["power","RESERVE"],["moon","MOON"],["h24","24 H"]];
+const DIM="rgba(201,178,140,.42)";
+function engrave(g,s,x,y,size,color,ls,align){
+  txt(g,s,x,y+.9,size,"rgba(255,255,255,.13)",false,align||"center",ls);
+  txt(g,s,x,y,size,color,false,align||"center",ls);
+}
+function slot(g,x,y,w,h){                   // a recess cut into the plate
+  rrect(g,x,y,w,h,h/2,"#07080A");
+  g.beginPath();g.roundRect(x+.6,y+.6,w-1.2,h-1.2,h/2);g.strokeStyle="rgba(0,0,0,.7)";g.lineWidth=1.2;g.stroke();
+  g.beginPath();g.roundRect(x,y+h-.4,w,1.1,h/2);g.fillStyle="rgba(255,235,200,.15)";g.fill();   // the lip catching light
+}
+function knob(g,F,x,y,w,h){                 // a knurled gold slider
+  const gr=g.createLinearGradient(0,y,0,y+h);
+  gr.addColorStop(0,F.light);gr.addColorStop(.45,F.gold);gr.addColorStop(1,mix(F.gold,"#000000",.55));
+  rrect(g,x+1,y+1.6,w,h,3,"rgba(0,0,0,.55)");
+  rrect(g,x,y,w,h,3,gr);
+  for(let i=1;i<4;i++) line(g,x+i*w/4,y+3,x+i*w/4,y+h-3,"rgba(0,0,0,.35)",.8);
+  g.beginPath();g.roundRect(x,y,w,h,3);g.strokeStyle="rgba(0,0,0,.5)";g.lineWidth=.7;g.stroke();
+}
+function lever(g,F,x,y,on,label){           // x,y: the slot's top-left corner
+  const w=44,h=16,kw=18,kh=20;
+  slot(g,x,y,w,h);
+  knob(g,F,on?x+w-kw-1:x+1,y-2,kw,kh);
+  engrave(g,label,x+w+12,y+h/2+3,8.5,on?F.gold:DIM,.2,"left");
+}
+function medallion(g,F,i,x,y,selected){     // one alloy, turned and polished
+  const A=FINISHES[i];
+  circle(g,x,y+1.5,27,"rgba(0,0,0,.55)");
+  const gr=g.createLinearGradient(x-24,y-24,x+24,y+24);
+  gr.addColorStop(0,A.light);gr.addColorStop(.5,A.gold);gr.addColorStop(1,mix(A.gold,"#000000",.5));
+  circle(g,x,y,24,gr);
+  for(let r=6;r<22;r+=4) ring(g,x,y,r,"rgba(0,0,0,.10)",.7);
+  ring(g,x,y,24,"rgba(0,0,0,.6)",1.2);
+  if(selected){ ring(g,x,y,30,F.light,2); ring(g,x,y,32.6,"rgba(0,0,0,.5)",1);
+    poly(g,[x-5,y-43,x+5,y-43,x,y-36],F.light,null,0); }
+}
+function backControls(g,F){
+  backRegions=[];
+  const on=id=>document.getElementById(id).checked;
+  engrave(g,"GOLD",0,-166,7.5,F.gold,.34);
+  [-74,0,74].forEach((x,i)=>{ medallion(g,F,i,x,-118,state.finish===i);
+    backRegions.push({x0:x-36,y0:-160,x1:x+36,y1:-82,act:()=>pick('#finish button[data-i="'+i+'"]')}); });
+  engrave(g,"MOVEMENT",0,-56,7.5,F.gold,.34);
+  LEVERS.forEach(([id,label],i)=>{ const col=i%2,row=(i-col)/2,x=col?14:-160,y=-34+row*40;
+    lever(g,F,x,y,on(id),label);
+    backRegions.push({x0:x-6,y0:y-12,x1:x+150,y1:y+28,act:()=>flip(id)}); });
+  engrave(g,"COUNTER AT SIX",0,108,7.5,F.gold,.34);
+  slot(g,-78,132,156,16);
+  SIX.forEach(([v,label],i)=>{ const x=-60+i*60,sel=state.bottom===v;
+    if(sel) knob(g,F,x-9,130,18,20); else line(g,x,135,x,145,"rgba(255,235,200,.16)",1);
+    engrave(g,label,x,171,7.5,sel?F.light:DIM,.2);
+    backRegions.push({x0:x-30,y0:118,x1:x+30,y1:184,act:()=>pick('#bottom button[data-v="'+v+'"]')}); });
+}
+function pick(sel){ const b=document.querySelector(sel); if(b) b.click(); paintBack(); }
+function flip(id){ const el=document.getElementById(id); el.checked=!el.checked;
+  el.dispatchEvent(new Event("change",{bubbles:true})); paintBack(); }
+const _paintBack=paintBack;
+paintBack=function(){ _paintBack(); backControls(bctx,FINISHES[state.finish]); backTex.needsUpdate=true; };
+paintBack();
+
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+function tapBack(e){
+  if(-Math.cos(theta)<0.8 || Math.abs(omega)>0.6) return;     // only a caseback at rest, facing you
+  const r=glCanvas.getBoundingClientRect();
+  ndc.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const hit=ray.intersectObject(backMesh,false)[0];
+  if(!hit||!hit.uv) return;
+  const x=(hit.uv.x-.5)*582, y=(.5-hit.uv.y)*582;               // texture -> design units
+  for(const q of backRegions) if(x>=q.x0&&x<=q.x1&&y>=q.y0&&y<=q.y1){ q.act(); return; }
+}
 
 const _rawLoop=loop;
 loop=function(now){ applyCamera(); _rawLoop(now); };
