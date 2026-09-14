@@ -1,6 +1,6 @@
 # Corrections and where they stand
 
-Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.34**.
+Every correction and request since the first version, with an honest status. Updated 2026-09-14, app at **v0.0.35**.
 
 Status key: **Done** · **Prototype only** — built in `tools/`, not in the Android app · **Partial** · **Open** · **Check** — I believe it is fixed but you have not confirmed it.
 
@@ -107,6 +107,7 @@ Added in v0.0.06 in the page's own touch handlers, and I reported it as working.
 | 52 | The watch colour and the background reset on unlock | **Done and verified for the colour; could not reproduce for the background** — v0.0.30. The colour (and the movement toggles and the counter) are chosen on the plate on the caseback, and nothing had ever saved that plate: it lived only in the page, so every new lock screen page started over. The page now hands the plate to the app through a `minilock` JavaScript interface on every change, and the app restores it on load. Verified: rose gold chosen in the app, sleep, wake, and the fresh lock screen page came back rose. The background was already restored from prefs on every load, and it also survived the same sleep-and-wake at a light grey. If it still resets for you, tell me the exact steps. |
 | 53 | Background from white to black, through a rainbow | **Done and verified** — v0.0.31. The slider's track shows white, red, yellow, green, cyan, blue, violet, black, and the page maps the same value to the same colour, painting the studio backdrop in it with the usual vignette. Seen on the phone: the track, a mint studio at the cyan stop, a pale pink one near the white end; green, violet and yellow read back from the page as exactly the predicted colours. Left at black. |
 | 54 | Mechanical controls on the back, following the watch perfectly | **Done and verified** — v0.0.32–v0.0.34. The HTML plate was a flat overlay scaled and skewed over the canvas, so it could only approximate the caseback and drifted as soon as the camera orbited. The controls are now painted into the caseback's own texture in the dial's language: three turned alloy medallions with the chosen one ringed, six knurled slide levers in cut slots, a three-detent selector for the counter at six, engraved captions. They are part of the metal, so they follow every turn and tilt exactly. A tap is ray-cast onto the caseback in 3D and mapped to the control under it. Verified on the phone: taps flipped AMBIENT, chose rose gold and MOON, the caseback repainted each time, and each change was saved. Two things this uncovered: the engraved caseback had been buried 0.006 inside the polished back since the 3D watch was built (v0.0.33 moves it proud), and the lower engraving on the band was drawn upside down (v0.0.34). |
+| 55 | Put the background slider and the reset right under the watch in the app | **Done and verified** — v0.0.35. Both now sit directly below the watch, above EDITION 01 and the toggles. |
 
 ---
 

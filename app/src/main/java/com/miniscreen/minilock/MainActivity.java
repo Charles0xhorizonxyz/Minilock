@@ -88,6 +88,17 @@ public class MainActivity extends Activity {
         tilt = new TiltBridge(this, hero);
         battery = new BatteryBridge(this, hero);
 
+        // Right under the watch: the background scale and the reset, so a wrong colour or a
+        // wrong placement is put right where you can see it change.
+        background();
+        TextView resetWatch = text("Reset watch size and position", 14, gold);
+        resetWatch.setPadding(0, dp(14), 0, dp(18));
+        resetWatch.setOnClickListener(v -> {
+            Prefs.setPlacement(this, "");          // a bad placement would otherwise be permanent
+            if (hero != null) hero.reload();
+        });
+        add(resetWatch, -2);
+
         TextView edition = text("EDITION 01", 11, gold);
         edition.setLetterSpacing(.15f);
         edition.setGravity(Gravity.CENTER);
@@ -103,15 +114,6 @@ public class MainActivity extends Activity {
                 Prefs.lock(this));
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
                 Prefs.card(this));
-        background();
-
-        TextView resetWatch = text("Reset watch size and position", 14, gold);
-        resetWatch.setPadding(0, dp(16), 0, 0);
-        resetWatch.setOnClickListener(v -> {
-            Prefs.setPlacement(this, "");          // a bad placement would otherwise be permanent
-            if (hero != null) hero.reload();
-        });
-        add(resetWatch, -2);
 
         TextView overlay = text("Allow display over other apps   ↗", 14, gold);
         overlay.setPadding(0, dp(14), 0, 0);
