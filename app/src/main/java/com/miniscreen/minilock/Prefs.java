@@ -31,6 +31,8 @@ final class Prefs {
     /** Text size of the app screen: a ten-step ladder, 0 to 9; step 4 is the design size. */
     static int textStep(Context c) { return get(c).getInt("text_step", 4); }
     static void setTextStep(Context c, int v) { get(c).edit().putInt("text_step", v).apply(); }
+    /** Whether picking the phone up wakes the screen, so the watch shows without the power button. */
+    static boolean wakeOnPickup(Context c) { return get(c).getBoolean("wake_pickup", true); }
     /** How long the stand-in lock screen shows the watch before it fades, seconds; -1 = always. */
     static int lockStay(Context c) { return get(c).getInt("lock_stay", 60); }
     static void setLockStay(Context c, int v) { get(c).edit().putInt("lock_stay", v).apply(); }

@@ -8,8 +8,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
+import android.hardware.TriggerEvent;
+import android.hardware.TriggerEventListener;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
 
 /**
  * Keeps the stand-in lock screen alive. ACTION_SCREEN_OFF/ON cannot be received from the
@@ -29,12 +34,51 @@ public class LockService extends Service {
     private static final int NOTE_ID = 42;
     private BroadcastReceiver screen;
 
+    // Wake on pickup. The phone's pick-up gesture is a low-power, one-shot, wake-up sensor (the
+    // same one the system's lift-to-wake uses); it is armed whenever the screen goes off and,
+    // when it fires, a short wake lock turns the screen on. The staged watch is already there.
+    private SensorManager sensors;
+    private Sensor pickup;
+    private boolean pickupArmed;
+    private final TriggerEventListener onPickup = new TriggerEventListener() {
+        @Override public void onTrigger(TriggerEvent event) {
+            pickupArmed = false;
+            if (Prefs.wakeOnPickup(LockService.this) && Prefs.lock(LockService.this)) wakeScreen();
+            armPickup();
+        }
+    };
+
+    private void armPickup() {
+        if (pickupArmed || sensors == null || !Prefs.wakeOnPickup(this) || !Prefs.lock(this)) return;
+        if (pickup == null) {
+            pickup = sensors.getDefaultSensor(25);    // TYPE_PICK_UP_GESTURE, hidden in the SDK
+            if (pickup == null) pickup = sensors.getDefaultSensor(Sensor.TYPE_SIGNIFICANT_MOTION);
+        }
+        if (pickup != null && sensors.requestTriggerSensor(onPickup, pickup)) pickupArmed = true;
+    }
+
+    private void disarmPickup() {
+        if (pickupArmed && sensors != null && pickup != null) sensors.cancelTriggerSensor(onPickup, pickup);
+        pickupArmed = false;
+    }
+
+    @SuppressWarnings("deprecation")
+    private void wakeScreen() {
+        PowerManager pm = getSystemService(PowerManager.class);
+        if (pm == null || pm.isInteractive()) return;
+        PowerManager.WakeLock lock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+                | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "minilock:pickup");
+        lock.acquire(1500);                       // long enough for the display to come up
+    }
+
     @Override public void onCreate() {
         super.onCreate();
         startForeground(NOTE_ID, notification());
+        sensors = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         screen = new BroadcastReceiver() {
             @Override public void onReceive(Context context, Intent intent) {
                 if (!Prefs.lock(context)) return;
+                if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) armPickup();
                 // SCREEN_ON is only a fallback for when nothing was staged (the service came
                 // up while the screen was already off). If the watch is there, leave it.
                 if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())
@@ -53,10 +97,13 @@ public class LockService extends Service {
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
+        PowerManager pm = getSystemService(PowerManager.class);
+        if (pm != null && !pm.isInteractive()) armPickup();   // started with the screen already off
         return START_STICKY;
     }
 
     @Override public void onDestroy() {
+        disarmPickup();
         if (screen != null) { unregisterReceiver(screen); screen = null; }
         super.onDestroy();
     }

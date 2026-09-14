@@ -159,6 +159,12 @@ public class MainActivity extends Activity {
         toggle("Sweeping seconds", "A fluid, mechanical rhythm", "sweep", Prefs.sweep(this));
         toggle("Stand-in lock screen", "The 3D watch when the screen wakes", "lock",
                 Prefs.lock(this));
+        Switch pickup = row("Wake on pickup", "Picking the phone up wakes the screen, no power button needed");
+        pickup.setChecked(Prefs.wakeOnPickup(this));
+        pickup.setOnCheckedChangeListener((v, on) -> {
+            Prefs.get(this).edit().putBoolean("wake_pickup", on).apply();
+            if (Prefs.lock(this) && Settings.canDrawOverlays(this)) LockService.start(this);   // re-arm now
+        });
         String[] stayKeys = {"15", "30", "60", "120", "300", "600", "-1"};
         String[] stayNames = {"15 seconds", "30 seconds", "1 minute", "2 minutes", "5 minutes",
                               "10 minutes", "Always"};

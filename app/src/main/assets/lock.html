@@ -941,7 +941,7 @@ function retarget(){                  // where the camera should be, relative to
   // hangs toward it. Phone upright: straight down. Phone flat on a table: no preference.
   gDev.set(0,0,-1).applyQuaternion(qInv.copy(qWanted).invert());
   const inPlane=Math.hypot(gDev.x,gDev.y);
-  phiTarget = -Math.atan2(gDev.x,-gDev.y) * Math.min(1, inPlane*1.5);
+  phiTarget = Math.atan2(gDev.x,-gDev.y) * Math.min(1, inPlane*1.5);   // +z turns the body to the right
   qWanted.premultiply(qBase);
 }
 const eul=new THREE.Euler();
