@@ -101,6 +101,12 @@ final class Watch3D {
                 + parts[0] + "," + parts[1] + "," + parts[2] + ")", null);
     }
 
+    /** Put the watch back in the middle at its design size, live; nothing else is touched. */
+    static void recenter(WebView web) {
+        Prefs.setPlacement(web.getContext(), "");
+        if (web != null) web.evaluateJavascript("window.__lock&&__lock.setPlacement(1,0,0)", null);
+    }
+
     /** Remember where it was parked, once the gesture ends. */
     static void savePlacement(final WebView web) {
         web.evaluateJavascript("window.__lock?__lock.placement():''", new ValueCallback<String>() {
@@ -126,14 +132,15 @@ final class Watch3D {
     static void sync(WebView web) {
         if (web == null) return;
         if (Prefs.factory(web.getContext())) {
-            // Factory: the page's own gold, dial and studio, which is the look that used to
-            // flash for an instant before the saved choices landed on top of it.
-            web.evaluateJavascript("window.__lock&&(__lock.setBackground(0),__lock.setState("
-                    + org.json.JSONObject.quote(FACTORY_PLATE) + "))", null);
+            // Factory: the page's own gold and dial, the look that used to flash for an instant
+            // before the saved choices landed on top of it. The background is not part of the
+            // design since v0.0.67: it is the user's choice under Factory and Custom alike.
+            web.evaluateJavascript("window.__lock&&__lock.setState("
+                    + org.json.JSONObject.quote(FACTORY_PLATE) + ")", null);
         } else {
-            applyBackground(web);
             restorePlate(web);
         }
+        applyBackground(web);
         applyCard(web);                       // the text under the watch follows its own switch
         applyFlat(web);                       // 3D or 2D
     }

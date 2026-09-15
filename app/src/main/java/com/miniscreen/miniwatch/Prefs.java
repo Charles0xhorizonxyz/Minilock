@@ -11,9 +11,9 @@ final class Prefs {
     static boolean lock(Context c) { return get(c).getBoolean("lock", false); }
     static boolean card(Context c) { return get(c).getBoolean("card", true); }
     /**
-     * "factory": the watch exactly as designed (24k gold, bright dial, dark studio), saved
-     * choices kept but not applied. "custom": the caseback and background as the user left
-     * them. Any change to those makes it custom again. The text under the watch is separate.
+     * "factory": the watch exactly as designed (24k gold, bright dial), saved plate choices
+     * kept but not applied. "custom": the caseback as the user left it. A change to the plate
+     * makes it custom again. The background and the text under the watch are separate.
      */
     static boolean factory(Context c) { return "factory".equals(get(c).getString("design", "custom")); }
     static void setFactory(Context c, boolean on) {
@@ -22,7 +22,7 @@ final class Prefs {
     /** The studio behind the watch: 0 is the dark studio, 100 is white, paper tones between. */
     static int background(Context c) { return get(c).getInt("bg", 0); }
     static void setBackground(Context c, int v) {
-        get(c).edit().putInt("bg", v).putString("design", "custom").apply();
+        get(c).edit().putInt("bg", v).apply();      // the design is the watch; the paper is yours under either
     }
     /** "orbit": floating free; "hang3d": held by the ring, moving in 3D; "hang2d": a pendulum in the plane. */
     static String motion(Context c) {

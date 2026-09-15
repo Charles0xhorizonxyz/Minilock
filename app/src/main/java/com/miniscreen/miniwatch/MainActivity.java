@@ -119,15 +119,12 @@ public class MainActivity extends Activity {
         // Right under the watch: the background scale and the reset, so a wrong colour or a
         // wrong placement is put right where you can see it change.
         background();
-        TextView reset = text("Reset to default", 14, gold);
+        TextView reset = text("Recenter only", 14, gold);
         reset.setGravity(Gravity.CENTER);
         reset.setBackground(background(0x00000000, gold));   // outlined: the quieter button
         margin(reset, 18, 0);
         reset.getLayoutParams().height = dp(48);
-        reset.setOnClickListener(v -> {
-            Prefs.setPlacement(this, "");          // size and position only; colours are yours
-            if (hero != null) hero.reload();
-        });
+        reset.setOnClickListener(v -> Watch3D.recenter(hero));   // size and position, nothing else
 
         TextView preview = text("Preview fullscreen   ↗", 14, ink);
         preview.setGravity(Gravity.CENTER);
@@ -157,7 +154,7 @@ public class MainActivity extends Activity {
             }
         });
         design = dropdown("Design",
-                "Factory: the watch as designed. Custom: your caseback and background choices",
+                "Factory: the watch as designed. Custom: your caseback choices. The background is yours under either",
                 new String[] {"Factory", "Custom"}, new String[] {"factory", "custom"},
                 Prefs.factory(this) ? 0 : 1, key -> {
                     Prefs.setFactory(this, "factory".equals(key));
@@ -440,7 +437,6 @@ public class MainActivity extends Activity {
             @Override public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
                 if (!fromUser) return;
                 Prefs.setBackground(MainActivity.this, 100 - p);
-                markCustom();
                 Watch3D.applyBackground(hero);              // live, so you see it as you slide
             }
             @Override public void onStartTrackingTouch(SeekBar s) { }
