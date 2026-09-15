@@ -2,7 +2,7 @@
 
 An original luxury-watch dial for Android — as a screensaver, a live wallpaper, and (in progress) a replacement lock screen clock on a custom GrapheneOS build.
 
-Everything is drawn with `android.graphics.Canvas`. No network access, no accounts, no advertisements, no runtime libraries, and — so far — no permissions of any kind.
+Everything is drawn with `android.graphics.Canvas`. No network access, no accounts, no advertisements, no runtime libraries, and it asks only for what its features need: display over other apps for the stand-in lock screen, the calendar and notification access for the text under the watch, both optional. It never has the INTERNET permission.
 
 > The dial is an original design. It draws on the vocabulary of contemporary fine watchmaking — textured dials, applied indices, pointer counters, guilloché — but reproduces no brand's logo, dial or model, and claims no affiliation with any manufacturer.
 

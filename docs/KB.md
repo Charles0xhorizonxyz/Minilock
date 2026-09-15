@@ -1,7 +1,7 @@
 # Miniwatch knowledge base
 
 Read this first in a fresh session. It is the map; the detail lives in the documents it points to.
-Written 2026-09-15 at v0.0.63, current at v0.0.64. Keep it current: when something here changes, change it here too.
+Written 2026-09-15 at v0.0.63, current at v0.0.66. Keep it current: when something here changes, change it here too.
 
 ## What Miniwatch is
 
@@ -14,14 +14,14 @@ Minilock and Atelier are retired; the GitHub repository is still called Minilock
 
 ## Where things stand
 
-- v0.0.64 on the phone: the text under the watch re-set for a phone and inked against the chosen background. The 2D "held by the ring" watch goes the whole way round; only a dial
+- v0.0.66 on the phone: the text under the watch is real (calendar, notifications, alarm) and inked against the chosen background; the weather counter is still the prototype's. The 2D "held by the ring" watch goes the whole way round; only a dial
   gesture set to Unlock leaves the stand-in lock screen, and one of the two gestures is always
   Unlock; the app was renamed from Minilock in v0.0.62 with settings carried over.
 - The phone is a GrapheneOS Pixel 7 (`panther`, `ro.build.display.id` 2026091001) on wireless
   adb. Its address moves, even within a day; discover it with `adb mdns services`. When it is not
   advertising, Wireless debugging is off on the phone: ask, do not scan.
 - Every build is archived in `artifacts/` and logged in `artifacts/BUILDS.md`; every request and
-  its honest status is a row in `docs/CORRECTIONS.md` (84 rows so far).
+  its honest status is a row in `docs/CORRECTIONS.md` (85 rows so far).
 
 ## Rules of the house
 

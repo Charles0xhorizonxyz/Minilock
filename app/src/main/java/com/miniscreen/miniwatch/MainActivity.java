@@ -1,6 +1,8 @@
 package com.miniscreen.miniwatch;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -28,9 +30,11 @@ public class MainActivity extends Activity {
     private WebView hero;
     private ZoomLayout zoom;
     private BatteryBridge battery;
+    private InfoBridge info;
     private TiltBridge tilt;
     private SeekBar scale;                // the background slider, so a reset can move it
     private Switch dream, overlay;        // mirror system settings the app cannot change itself
+    private Switch calendar, alerts;      // the two permissions behind the text under the watch
     private Spinner design;               // Factory or Custom; flips to Custom when anything is changed
     private Spinner flick, spinTwo;       // the two lock-screen gestures; one of them is always Unlock
     private int textStep;                 // 0..9 on the ladder; 4 is the design size
@@ -101,6 +105,7 @@ public class MainActivity extends Activity {
         // The watch itself, in 3D. Tilt the phone and the light moves across the gold.
         hero = Watch3D.view(this, () -> {
             if (battery != null) battery.refresh();
+            if (info != null) info.refresh();
             if (tilt != null) tilt.refresh();              // the page's baseline, at once
         });
         int width = (int) (getResources().getDisplayMetrics().widthPixels
@@ -109,6 +114,7 @@ public class MainActivity extends Activity {
         hero.setOnClickListener(v -> startActivity(new Intent(this, PreviewActivity.class)));
         tilt = new TiltBridge(this, hero);
         battery = new BatteryBridge(this, hero);
+        info = new InfoBridge(this, hero);
 
         // Right under the watch: the background scale and the reset, so a wrong colour or a
         // wrong placement is put right where you can see it change.
@@ -183,6 +189,15 @@ public class MainActivity extends Activity {
         spinTwo = choice("Spin left to right, two turns", "One hard flick that turns the dial twice on the lock screen", Gestures.RIGHT2);
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
                 Prefs.card(this));
+        // The event and the alerts are the phone's own, and each needs a permission the user
+        // grants once. The alarm needs none. Nothing leaves the phone.
+        calendar = mirror("Calendar",
+                "The next event under the watch \u00b7 tap to allow reading the calendar",
+                this::calendarAllowed, this::askCalendar);
+        alerts = mirror("Notifications",
+                "The alerts under the watch and on the dial \u00b7 tap to open the phone's notification access page",
+                () -> InfoBridge.alertsAllowed(this),
+                () -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
         screensaver();
 
         overlay = mirror("Display over other apps",
@@ -237,6 +252,29 @@ public class MainActivity extends Activity {
         line.setClickable(true);
         line.setOnClickListener(v -> open.run());
         return control;
+    }
+
+    private boolean calendarAllowed() {
+        return checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** Ask once; if the phone will no longer ask, open the app's own permission page instead. */
+    private void askCalendar() {
+        if (calendarAllowed()) return;
+        if (shouldShowRequestPermissionRationale(Manifest.permission.READ_CALENDAR) || !askedCalendar) {
+            askedCalendar = true;
+            requestPermissions(new String[] {Manifest.permission.READ_CALENDAR}, 7);
+        } else {
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + getPackageName())));
+        }
+    }
+    private boolean askedCalendar;
+
+    @Override public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
+        super.onRequestPermissionsResult(code, perms, results);
+        if (calendar != null) { refreshing = true; calendar.setChecked(calendarAllowed()); refreshing = false; }
+        if (info != null) info.refresh();
     }
 
     private void openScreensaverSettings() {
@@ -512,11 +550,14 @@ public class MainActivity extends Activity {
         refreshing = true;                        // the system may have been changed meanwhile
         if (dream != null) dream.setChecked(isScreensaver());
         if (overlay != null) overlay.setChecked(Settings.canDrawOverlays(this));
+        if (calendar != null) calendar.setChecked(calendarAllowed());
+        if (alerts != null) alerts.setChecked(InfoBridge.alertsAllowed(this));
         if (design != null) design.setSelection(Prefs.factory(this) ? 0 : 1, false);
         refreshing = false;
         if (hero != null) hero.onResume();
         if (tilt != null && Prefs.gyro(this)) tilt.start();
         if (battery != null) battery.start();
+        if (info != null) info.start();
         // only run the watcher while it is both wanted and permitted
         if (Prefs.lock(this) && Settings.canDrawOverlays(this)) LockService.start(this);
         else if (!Prefs.lock(this)) LockService.stop(this);
@@ -526,6 +567,7 @@ public class MainActivity extends Activity {
         super.onPause();
         if (tilt != null) tilt.stop();
         if (battery != null) battery.stop();
+        if (info != null) info.stop();
         if (hero != null) hero.onPause();   // no WebGL rendering behind other apps
     }
 

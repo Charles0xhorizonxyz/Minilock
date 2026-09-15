@@ -590,5 +590,44 @@ requestAnimationFrame(loop);
 
 /* ---- wiring ---- */""")
 
+# The three rows under the watch were the prototype's demo data. The app now sends the phone's
+# own next event, alerts and alarm through __lock.setInfo; a row shows only when its lever on
+# the caseback is on and the phone has something to say. The guichet on the dial carries the
+# same alert count, so it starts at nought rather than the demo's three.
+sub("""  temp:18,cond:"clear",batt:64,charging:false,alertN:3,""",
+    """  temp:18,cond:"clear",batt:64,charging:false,alertN:0,""")
+sub("""function cardRows(){
+  const r=[];
+  if(state.event) r.push(["NEXT","09:30","Design review \u00b7 Studio"]);
+  if(state.alerts&&state.alertN>0&&!state.ambient) r.push(["ALERTES",String(state.alertN),SENDERS.join(" \u00b7 ")]);
+  if(state.alarm) r.push(["R\u00c9VEIL","06:45",""]);
+  return r.slice(0,3);
+}""",
+"""var info={event:null,alerts:null,alarm:null};   // what the phone reports; nothing until it does
+function cardRows(){
+  const r=[];
+  if(state.event&&info.event) r.push(["NEXT",info.event.time||"",info.event.text||""]);
+  if(state.alerts&&info.alerts&&info.alerts.n>0&&!state.ambient)
+    r.push(["ALERTES",String(info.alerts.n),(info.alerts.senders||[]).join(" \u00b7 ")]);
+  if(state.alarm&&info.alarm) r.push(["R\u00c9VEIL",info.alarm,""]);
+  return r.slice(0,3);
+}""")
+sub("""  setBattery(pct,charging){           // the real charge, from BatteryManager
+    state.batt=Math.max(0,Math.min(100,Math.round(pct)));
+    state.charging=!!charging;
+  },""",
+"""  setBattery(pct,charging){           // the real charge, from BatteryManager
+    state.batt=Math.max(0,Math.min(100,Math.round(pct)));
+    state.charging=!!charging;
+  },
+  setInfo(json){                      // the phone's next event, alerts and alarm, from InfoBridge
+    let i; try{ i=typeof json==="string"?JSON.parse(json):json; }catch(e){ return; }
+    if(!i||typeof i!=="object") return;
+    info={event:i.event||null, alerts:i.alerts||null, alarm:i.alarm||null};
+    state.alertN=info.alerts?Math.max(0,info.alerts.n|0):0;
+    paintAt=-1e9;                     // the guichet on the dial shows the count
+    renderCard();
+  },""")
+
 io.open("app/src/main/assets/lock.html", "w", encoding="utf-8").write(s)
 print("assets/lock.html:", os.path.getsize("app/src/main/assets/lock.html"), "bytes")

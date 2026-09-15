@@ -9,6 +9,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- The next event under the watch. Read locally; nothing leaves the phone. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- To name the app behind an alert: other packages are hidden from an app otherwise. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <application android:label="Miniwatch" android:theme="@style/AppTheme" android:icon="@drawable/ic_miniwatch" android:allowBackup="true" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
@@ -34,6 +38,12 @@
             android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Shows the replacement lock screen when the display wakes" />
+        </service>
+        <!-- The alerts count on the dial and under the watch. The user switches it on under
+             notification access; only the posting app's name is read. -->
+        <service android:name=".AlertsListener" android:label="Miniwatch" android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
         </service>
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>

@@ -12,6 +12,7 @@ public class PreviewActivity extends Activity {
     private WebView web;
     private TiltBridge tilt;
     private BatteryBridge battery;
+    private InfoBridge info;
     private float downX, downY;
 
     @Override public void onCreate(Bundle state) {
@@ -19,6 +20,7 @@ public class PreviewActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         web = Watch3D.view(this, () -> {
             if (battery != null) battery.refresh();
+            if (info != null) info.refresh();
             if (tilt != null) tilt.refresh();
             // Gyroscope readout. Nothing on this side can move the phone, so the page reports
             // what the sensor delivers and the user reads it back. Temporary, preview only.
@@ -30,6 +32,7 @@ public class PreviewActivity extends Activity {
         tilt = new TiltBridge(this, web);
         Watch3D.enablePinch(web);
         battery = new BatteryBridge(this, web);
+        info = new InfoBridge(this, web);
     }
 
     @Override protected void onResume() {
@@ -37,12 +40,14 @@ public class PreviewActivity extends Activity {
         if (web != null) { web.onResume(); Watch3D.sync(web); }
         if (tilt != null && Prefs.gyro(this)) tilt.start();
         if (battery != null) battery.start();
+        if (info != null) info.start();
     }
 
     @Override protected void onPause() {
         super.onPause();
         if (tilt != null) tilt.stop();
         if (battery != null) battery.stop();
+        if (info != null) info.stop();
         if (web != null) web.onPause();
     }
 

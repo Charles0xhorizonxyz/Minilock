@@ -32,6 +32,7 @@ public class LockScreenActivity extends Activity {
     private Gestures.Torch torch;
     private TiltBridge tilt;
     private BatteryBridge battery;
+    private InfoBridge info;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -43,6 +44,7 @@ public class LockScreenActivity extends Activity {
         torch = new Gestures.Torch(this);
         web = Watch3D.view(this, () -> {
                     if (battery != null) battery.refresh();
+                    if (info != null) info.refresh();
                     if (tilt != null) tilt.refresh();
                 },
                 gesture -> Gestures.perform(this, gesture, this::unlock, torch));
@@ -51,6 +53,7 @@ public class LockScreenActivity extends Activity {
         tilt = new TiltBridge(this, web);
         Watch3D.enablePinch(web);
         battery = new BatteryBridge(this, web);
+        info = new InfoBridge(this, web);
     }
 
     @Override protected void onResume() {
@@ -58,6 +61,7 @@ public class LockScreenActivity extends Activity {
         if (web != null) { web.onResume(); Watch3D.sync(web); }   // settings may have changed meanwhile
         if (tilt != null && Prefs.gyro(this)) tilt.start();
         if (battery != null) battery.start();
+        if (info != null) info.start();
         wake();                                   // also arms the clock
     }
 
@@ -67,6 +71,7 @@ public class LockScreenActivity extends Activity {
         timer.removeCallbacks(goDark);
         if (tilt != null) tilt.stop();
         if (battery != null) battery.stop();
+        if (info != null) info.stop();
         if (web != null) web.onPause();
     }
 

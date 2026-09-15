@@ -257,7 +257,7 @@ const FINISHES=[
 const DAYS=["M","T","W","T","F","S","S"], DATES=["1","5","10","15","20","25"], HOURS=["0","4","8","12","16","20"];
 const GARNET="#9E4A46";
 const state={finish:0,ambient:false,sweep:true,bottom:"power",weather:true,alerts:true,alarm:true,event:true,
-  temp:18,cond:"clear",batt:64,charging:false,alertN:3,
+  temp:18,cond:"clear",batt:64,charging:false,alertN:0,
   K:26, C:3.6, swing:13};
 
 /* ---------- 2D helpers (shared with the Android drawing) ---------- */
@@ -485,11 +485,13 @@ function backArt(g,F){
 
 /* ---------- the card ---------- */
 const SENDERS=["Messages","Calendar","Mail"];
+var info={event:null,alerts:null,alarm:null};   // what the phone reports; nothing until it does
 function cardRows(){
   const r=[];
-  if(state.event) r.push(["NEXT","09:30","Design review · Studio"]);
-  if(state.alerts&&state.alertN>0&&!state.ambient) r.push(["ALERTES",String(state.alertN),SENDERS.join(" · ")]);
-  if(state.alarm) r.push(["RÉVEIL","06:45",""]);
+  if(state.event&&info.event) r.push(["NEXT",info.event.time||"",info.event.text||""]);
+  if(state.alerts&&info.alerts&&info.alerts.n>0&&!state.ambient)
+    r.push(["ALERTES",String(info.alerts.n),(info.alerts.senders||[]).join(" · ")]);
+  if(state.alarm&&info.alarm) r.push(["RÉVEIL",info.alarm,""]);
   return r.slice(0,3);
 }
 /* The text under the watch, sized for a phone at arm's length and inked against whatever the
@@ -1112,6 +1114,14 @@ window.__lock={
   setBattery(pct,charging){           // the real charge, from BatteryManager
     state.batt=Math.max(0,Math.min(100,Math.round(pct)));
     state.charging=!!charging;
+  },
+  setInfo(json){                      // the phone's next event, alerts and alarm, from InfoBridge
+    let i; try{ i=typeof json==="string"?JSON.parse(json):json; }catch(e){ return; }
+    if(!i||typeof i!=="object") return;
+    info={event:i.event||null, alerts:i.alerts||null, alarm:i.alarm||null};
+    state.alertN=info.alerts?Math.max(0,info.alerts.n|0):0;
+    paintAt=-1e9;                     // the guichet on the dial shows the count
+    renderCard();
   },
 };
 function applyCamera(){
