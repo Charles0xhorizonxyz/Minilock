@@ -19,6 +19,8 @@ The Android app currently ships the **original** dial. The redesign lives in the
 
 Open questions and every correction so far are tracked in [docs/CORRECTIONS.md](docs/CORRECTIONS.md).
 
+To resume work in a fresh Claude Code session, type `/handshake`: it reads [docs/KB.md](docs/KB.md), the project's map, and reports where things stand.
+
 ## Repository layout
 
 ```

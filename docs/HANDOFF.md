@@ -1,5 +1,8 @@
 # Miniwatch — handoff for a fresh session
 
+> Start with `docs/KB.md`, the short map of the project, its rules and its roadmap; or type
+> `/handshake` in a new session, which reads both and checks the phone. This file is the deep detail.
+
 You are picking up an Android project mid-flight. This document is everything you need to
 continue autonomously. Read it fully before touching anything. The user has switched AI models,
 so assume **no shared memory** with the previous session beyond this file, the git history, and
