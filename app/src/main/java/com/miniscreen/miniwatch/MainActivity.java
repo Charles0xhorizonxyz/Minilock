@@ -32,6 +32,7 @@ public class MainActivity extends Activity {
     private SeekBar scale;                // the background slider, so a reset can move it
     private Switch dream, overlay;        // mirror system settings the app cannot change itself
     private Spinner design;               // Factory or Custom; flips to Custom when anything is changed
+    private Spinner flick, spinTwo;       // the two lock-screen gestures; one of them is always Unlock
     private int textStep;                 // 0..9 on the ladder; 4 is the design size
     private float textScale = 1f;
     private final java.util.List<TextView> sized = new java.util.ArrayList<>();
@@ -178,8 +179,8 @@ public class MainActivity extends Activity {
         dropdown("Fade to black over", "How long the watch takes to go dark",
                 fadeNames, fadeKeys, Gestures.indexOf(fadeKeys, String.valueOf(Prefs.lockFade(this))),
                 key -> Prefs.setLockFade(this, Integer.parseInt(key)));
-        choice("Flick right to left", "One turn of the dial on the lock screen", Gestures.LEFT1);
-        choice("Spin left to right, two turns", "One hard flick that turns the dial twice on the lock screen", Gestures.RIGHT2);
+        flick = choice("Flick right to left", "One turn of the dial on the lock screen · one of these two is always Unlock", Gestures.LEFT1);
+        spinTwo = choice("Spin left to right, two turns", "One hard flick that turns the dial twice on the lock screen", Gestures.RIGHT2);
         toggle("Text under the watch", "Date, next event, alerts and alarm", "card",
                 Prefs.card(this));
         screensaver();
@@ -265,11 +266,22 @@ public class MainActivity extends Activity {
         refreshing = false;
     }
 
-    /** A settings row with a dropdown of lock-screen actions on the right. */
-    private void choice(String title, String desc, String prefKey) {
-        dropdown(title, desc, Gestures.NAMES, Gestures.KEYS,
-                Gestures.indexOf(Prefs.gesture(this, prefKey, Gestures.defaultFor(prefKey))),
-                key -> Prefs.setGesture(this, prefKey, key));
+    /**
+     * A settings row with a dropdown of lock-screen actions on the right. One of the two
+     * gestures is always Unlock: choosing anything else here moves the other row to it.
+     */
+    private Spinner choice(String title, String desc, String prefKey) {
+        return dropdown(title, desc, Gestures.NAMES, Gestures.KEYS,
+                Gestures.indexOf(Gestures.actionFor(this, prefKey)),
+                key -> {
+                    String moved = Gestures.choose(this, prefKey, key);
+                    if (moved == null) return;
+                    Spinner other = Gestures.LEFT1.equals(moved) ? flick : spinTwo;
+                    if (other == null) return;
+                    refreshing = true;
+                    other.setSelection(Gestures.indexOf("unlock"), false);
+                    refreshing = false;
+                });
     }
 
     /** A settings row with a dropdown on the right; onPick gets the chosen key, user taps only. */

@@ -6,8 +6,8 @@ android {
         applicationId 'com.miniscreen.miniwatch'
         minSdk 26
         targetSdk 36
-        versionCode 62
-        versionName '0.0.62'
+        versionCode 63
+        versionName '0.0.63'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

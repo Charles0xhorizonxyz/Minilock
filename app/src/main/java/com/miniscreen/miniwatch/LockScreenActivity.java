@@ -32,8 +32,6 @@ public class LockScreenActivity extends Activity {
     private Gestures.Torch torch;
     private TiltBridge tilt;
     private BatteryBridge battery;
-    private float downX, downY;
-    private long downAt;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -117,14 +115,20 @@ public class LockScreenActivity extends Activity {
         super.onDestroy();
     }
 
-    /** Leave: a gesture set to Unlock lands here; so does the swipe up below. */
+    /** Leave: only a dial gesture set to Unlock lands here. There is no swipe. */
     private void unlock() {
         if (isFinishing()) return;
         finish();
         overridePendingTransition(0, android.R.anim.fade_out);
     }
 
-    /** A decisive upward swipe dismisses; anything else falls through to the watch. */
+    /**
+     * Touch only wakes the watch or restarts its clock; nothing here dismisses. A swipe up used
+     * to, which meant a brush of the glass opened the phone; now only a dial gesture set to
+     * Unlock does, and the app keeps one of the two gestures on Unlock. What an app cannot stop
+     * is the system's own navigation: the bars are hidden and a swipe from the bottom edge only
+     * reveals them at first, but a second one still goes Home.
+     */
     @Override public boolean dispatchTouchEvent(MotionEvent e) {
         if (e.getActionMasked() == MotionEvent.ACTION_DOWN) {
             if (fading || darkened) {
@@ -139,24 +143,6 @@ public class LockScreenActivity extends Activity {
             int a = e.getActionMasked();
             if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL) swallow = false;
             return true;
-        }
-        if (e.getPointerCount() > 1) return super.dispatchTouchEvent(e);   // leave pinches alone
-        switch (e.getActionMasked()) {
-            case MotionEvent.ACTION_DOWN:
-                downX = e.getX(); downY = e.getY(); downAt = System.currentTimeMillis();
-                break;
-            case MotionEvent.ACTION_UP:
-                float dx = e.getX() - downX, dy = e.getY() - downY;
-                float need = getResources().getDisplayMetrics().heightPixels * 0.16f;
-                if (dy < -need && Math.abs(dy) > Math.abs(dx) * 1.5f
-                        && System.currentTimeMillis() - downAt < 1000) {
-                    finish();
-                    overridePendingTransition(0, android.R.anim.fade_out);
-                    return true;
-                }
-                break;
-            default:
-                break;
         }
         return super.dispatchTouchEvent(e);
     }

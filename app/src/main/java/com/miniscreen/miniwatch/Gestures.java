@@ -25,6 +25,33 @@ final class Gestures {
 
     static String defaultFor(String prefKey) { return LEFT1.equals(prefKey) ? "unlock" : "camera"; }
 
+    /**
+     * The action a gesture performs, with one guarantee: one of the two gestures is always
+     * Unlock, or the stand-in lock screen could only be left through Home. If neither is set
+     * to it, the flick is. The app keeps the stored choices in that shape (see choose); this is
+     * the safety net for anything that reaches the lock screen otherwise.
+     */
+    static String actionFor(Context c, String prefKey) {
+        String action = Prefs.gesture(c, prefKey, defaultFor(prefKey));
+        if (!"unlock".equals(action) && LEFT1.equals(prefKey)
+                && !"unlock".equals(Prefs.gesture(c, RIGHT2, defaultFor(RIGHT2)))) return "unlock";
+        return action;
+    }
+
+    /**
+     * Store the user's choice for a gesture. Choosing anything but Unlock while the other
+     * gesture is not Unlock either moves the other gesture to Unlock, so opening the phone is
+     * always one of the two. Returns the other gesture's key when it was moved, else null.
+     */
+    static String choose(Context c, String prefKey, String action) {
+        Prefs.setGesture(c, prefKey, action);
+        if ("unlock".equals(action)) return null;
+        String other = LEFT1.equals(prefKey) ? RIGHT2 : LEFT1;
+        if ("unlock".equals(Prefs.gesture(c, other, defaultFor(other)))) return null;
+        Prefs.setGesture(c, other, "unlock");
+        return other;
+    }
+
     static int indexOf(String key) { return indexOf(KEYS, key); }
 
     static int indexOf(String[] keys, String key) {
@@ -35,7 +62,7 @@ final class Gestures {
     /** Runs the user's choice for a gesture the page reported. Only the lock screen calls this. */
     static void perform(Activity from, String gesture, Runnable unlock, Torch torch) {
         String prefKey = "right2".equals(gesture) ? RIGHT2 : LEFT1;
-        String action = Prefs.gesture(from, prefKey, defaultFor(prefKey));
+        String action = actionFor(from, prefKey);
         switch (action) {
             case "unlock": unlock.run(); break;
             case "camera": open(from, new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)); break;
