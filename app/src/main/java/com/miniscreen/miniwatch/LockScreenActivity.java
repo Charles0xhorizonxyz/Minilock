@@ -1,4 +1,4 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.app.Activity;
 import android.os.Build;

@@ -1,4 +1,4 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.content.Context;
 import android.hardware.Sensor;

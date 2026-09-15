@@ -1,8 +1,8 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.service.dreams.DreamService;
 
-public class MinilockDreamService extends DreamService {
+public class MiniwatchDreamService extends DreamService {
     @Override public void onAttachedToWindow() {
         super.onAttachedToWindow();
         setInteractive(false);

@@ -1,4 +1,4 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.content.Context;
 import android.graphics.*;
@@ -21,7 +21,7 @@ public class WatchView extends View {
         {0xFFD3A28D, 0xFFFFE0CA, 0xFF302225}
     };
     public WatchView(Context c) {
-        super(c); setContentDescription("Minilock analog clock with day, date and 24-hour subdials");
+        super(c); setContentDescription("Miniwatch analog clock with day, date and 24-hour subdials");
         for(int i=0;i<3;i++) {
             bezels[i]=new LinearGradient(-260,-280,220,290,new int[]{0xFF302E2B,finishes[i][1],0xFF685A46,finishes[i][0],0xFF24282B},null,Shader.TileMode.CLAMP);
             dials[i]=new RadialGradient(-80,-100,480,new int[]{finishes[i][2],0xFF080E17},null,Shader.TileMode.CLAMP);

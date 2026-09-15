@@ -1,10 +1,10 @@
-"""What Minilock has cost the battery, from the phone's own accounting.
+"""What Miniwatch has cost the battery, from the phone's own accounting.
 
     python tools/battery-report.py            # since the last full charge
     python tools/battery-report.py --sample 600   # also: charge-counter drain over N seconds, now
 
 Reads `dumpsys battery` (level, charge counter, plugged) and `dumpsys batterystats` (screen-on
-time since the last charge, the estimated power use per app, and Minilock's CPU, sensor and
+time since the last charge, the estimated power use per app, and Miniwatch's CPU, sensor and
 foreground time). Nothing is reset, so the phone's own Battery settings page stays intact.
 With --sample it also measures the live drain: charge counter now, wait, charge counter again,
 which is exact and independent of the estimates. Do that unplugged, with the watch on screen.
@@ -17,12 +17,12 @@ import sys
 import time
 
 ADB = os.path.expanduser("~/AppData/Local/Android/Sdk/platform-tools/adb.exe")
-PKG = "com.miniscreen.minilock"
+PKG = "com.miniscreen.miniwatch"
 CAPACITY_MAH = 4355          # Pixel 7
 
 
 def find_device():
-    fixed = os.environ.get("MINILOCK_DEVICE")
+    fixed = os.environ.get("MINIWATCH_DEVICE")
     if fixed:
         return fixed
     out = subprocess.run([ADB, "mdns", "services"], capture_output=True, text=True, timeout=20).stdout
@@ -71,7 +71,7 @@ def since_charge():
             if t.startswith(("Capacity:", "screen:", "GPU:", "wakelock:", "mobile_radio:", "wifi:")) and len(use) < 8:
                 use.append("   " + t)                       # the global picture
             if t.startswith("UID " + tag + ":"):
-                use.append("   MINILOCK  " + t)             # our line: total, fg (activity on screen), fgs (service)
+                use.append("   MINIWATCH  " + t)             # our line: total, fg (activity on screen), fgs (service)
             if t.startswith("All partial wake locks") or "Per-app mobile" in t:
                 break
     app = sh("dumpsys", "batterystats", "--charged", PKG)
@@ -90,7 +90,7 @@ def main():
     print(f"  Estimated power use in mAh. 'fg' is with the watch on screen, 'fgs' the resident service:")
     for l in use:
         print("   " + l)
-    print("  Minilock detail:")
+    print("  Miniwatch detail:")
     for l in keep:
         print("   " + l)
     if "--sample" in sys.argv:

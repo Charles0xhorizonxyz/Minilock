@@ -1,4 +1,4 @@
-"""Set, or delete, entries in Minilock's preferences on the phone, keeping the file well-formed.
+"""Set, or delete, entries in Miniwatch's preferences on the phone, keeping the file well-formed.
 
     python tools/prefs-set.py gyro=false threeD=false     # booleans
     python tools/prefs-set.py lock_stay=15 lock_fade=3     # ints
@@ -18,12 +18,12 @@ import subprocess
 import sys
 
 ADB = os.path.expanduser("~/AppData/Local/Android/Sdk/platform-tools/adb.exe")
-PKG = "com.miniscreen.minilock"
-FILE = "shared_prefs/minilock.xml"
+PKG = "com.miniscreen.miniwatch"
+FILE = "shared_prefs/miniwatch.xml"
 
 
 def find_device():
-    fixed = os.environ.get("MINILOCK_DEVICE")
+    fixed = os.environ.get("MINIWATCH_DEVICE")
     if fixed:
         return fixed
     out = subprocess.run([ADB, "mdns", "services"], capture_output=True, text=True, timeout=20).stdout
@@ -66,14 +66,14 @@ def main():
             if value != "-":
                 lines.append(element(key, value))
         body = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n" + "\n".join(lines) + "\n</map>\n"
-        local = os.path.join(os.environ.get("TEMP", "."), "minilock-prefs.xml")
+        local = os.path.join(os.environ.get("TEMP", "."), "miniwatch-prefs.xml")
         with open(local, "w", encoding="utf-8", newline="\n") as f:
             f.write(body)
-        sh("push", local, "/data/local/tmp/minilock-prefs.xml")
-        r = sh("shell", "run-as", PKG, "cp", "/data/local/tmp/minilock-prefs.xml", FILE)
+        sh("push", local, "/data/local/tmp/miniwatch-prefs.xml")
+        r = sh("shell", "run-as", PKG, "cp", "/data/local/tmp/miniwatch-prefs.xml", FILE)
         if r.returncode != 0:
             sys.exit("push failed: " + r.stderr)
-        sh("shell", "rm", "/data/local/tmp/minilock-prefs.xml")
+        sh("shell", "rm", "/data/local/tmp/miniwatch-prefs.xml")
     for l in sorted(lines):
         print(l.strip())
 

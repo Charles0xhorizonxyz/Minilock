@@ -23,8 +23,8 @@ PORT = 9222
 
 
 def find_device():
-    """The phone's wireless-debugging address changes; take MINILOCK_DEVICE, else ask mDNS."""
-    fixed = os.environ.get("MINILOCK_DEVICE")
+    """The phone's wireless-debugging address changes; take MINIWATCH_DEVICE, else ask mDNS."""
+    fixed = os.environ.get("MINIWATCH_DEVICE")
     if fixed:
         return fixed
     out = subprocess.run([ADB, "mdns", "services"], capture_output=True, text=True, timeout=20).stdout
@@ -54,7 +54,7 @@ def main():
     socks = sorted(set(re.findall(r"webview_devtools_remote_\d+",
                                   adb("shell", "cat", "/proc/net/unix"))))
     if not socks:
-        sys.exit("no WebView DevTools socket: is Minilock running on the phone?")
+        sys.exit("no WebView DevTools socket: is Miniwatch running on the phone?")
     subprocess.run([ADB, "-s", DEVICE, "forward", "--remove", f"tcp:{PORT}"], capture_output=True)
     adb("forward", f"tcp:{PORT}", f"localabstract:{socks[0]}")
     pages = [p for p in json.load(urllib.request.urlopen(f"http://127.0.0.1:{PORT}/json"))

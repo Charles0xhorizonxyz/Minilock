@@ -1,4 +1,4 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -198,7 +198,7 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Whether Android's screensaver is Minilock. An app cannot set the screensaver itself, so
+     * Whether Android's screensaver is Miniwatch. An app cannot set the screensaver itself, so
      * the switch shows the real state and opens the system page to change it.
      */
     private boolean isScreensaver() {
@@ -213,7 +213,7 @@ public class MainActivity extends Activity {
 
     private void screensaver() {
         dream = mirror("Screensaver",
-                "Minilock as the Android screensaver · tap to open the phone's screensaver settings",
+                "Miniwatch as the Android screensaver · tap to open the phone's screensaver settings",
                 this::isScreensaver, this::openScreensaverSettings);
     }
 

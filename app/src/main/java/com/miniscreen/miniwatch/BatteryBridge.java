@@ -1,4 +1,4 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

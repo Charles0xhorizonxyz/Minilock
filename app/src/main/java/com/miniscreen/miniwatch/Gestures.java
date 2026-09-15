@@ -1,4 +1,4 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -21,7 +21,7 @@ final class Gestures {
     static final String LEFT1 = "g_left1", RIGHT2 = "g_right2";
     static final String[] KEYS = {"none", "unlock", "camera", "torch", "app", "alarms"};
     static final String[] NAMES = {"Nothing", "Unlock", "Open the camera", "Torch on or off",
-                                   "Open Minilock", "Open the alarms"};
+                                   "Open Miniwatch", "Open the alarms"};
 
     static String defaultFor(String prefKey) { return LEFT1.equals(prefKey) ? "unlock" : "camera"; }
 

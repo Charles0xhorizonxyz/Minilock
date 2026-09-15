@@ -1,4 +1,4 @@
-# Minilock
+# Miniwatch
 
 An original luxury-watch dial for Android — as a screensaver, a live wallpaper, and (in progress) a replacement lock screen clock on a custom GrapheneOS build.
 
@@ -54,11 +54,11 @@ Every build is archived — bump `versionName` in [`app/build.gradle`](app/build
 ## Installing
 
 ```bash
-adb install -r artifacts/Minilock-v0.0.05-debug.apk
+adb install -r artifacts/Miniwatch-v0.0.62-debug.apk
 ```
 
-- **Screensaver** — Settings → Display → Screen saver → Minilock
-- **Live wallpaper** — Settings → Wallpaper → Live wallpapers → Minilock
+- **Screensaver** — Settings → Display → Screen saver → Miniwatch
+- **Live wallpaper** — Settings → Wallpaper → Live wallpapers → Miniwatch
 
 Debug builds are signed with the local Android debug key and are not distributable.
 

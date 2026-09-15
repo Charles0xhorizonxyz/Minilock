@@ -1,4 +1,4 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -67,7 +67,7 @@ public class LockService extends Service {
         PowerManager pm = getSystemService(PowerManager.class);
         if (pm == null || pm.isInteractive()) return;
         PowerManager.WakeLock lock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
-                | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "minilock:pickup");
+                | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "miniwatch:pickup");
         lock.acquire(1500);                       // long enough for the display to come up
     }
 
@@ -125,7 +125,7 @@ public class LockService extends Service {
         return builder
                 .setContentTitle("Miniscreen lock screen")
                 .setContentText("Showing the dial when the screen wakes")
-                .setSmallIcon(R.drawable.ic_minilock)
+                .setSmallIcon(R.drawable.ic_miniwatch)
                 .setOngoing(true)
                 .build();
     }

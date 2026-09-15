@@ -1,17 +1,17 @@
-# Minilock — handoff for a fresh session
+# Miniwatch — handoff for a fresh session
 
 You are picking up an Android project mid-flight. This document is everything you need to
 continue autonomously. Read it fully before touching anything. The user has switched AI models,
 so assume **no shared memory** with the previous session beyond this file, the git history, and
 `docs/CORRECTIONS.md`.
 
-Current app version: **v0.0.61**. `Watch3D.sync(web)` applies design, background, plate, text and 3D/2D; it runs on page load and in `onResume` of the lock screen and the preview, because the staged lock screen keeps its page across wakes (and Home leaves it alive). Wake on pickup: `LockService` arms sensor type 25 (`TYPE_PICK_UP_GESTURE`, hidden in the SDK; falls back to significant motion) with `requestTriggerSensor` on SCREEN_OFF and wakes the screen with a `SCREEN_BRIGHT_WAKE_LOCK | ACQUIRE_CAUSES_WAKEUP` lock held 1.5 s; `dumpsys sensorservice` shows the `0x01010013 ... LockService` registration after screen-off. The 2D pendulum sign: positive `swingGroup.rotation.z` moves the body to the right, so `phiTarget = +atan2(gx, -gy)`. Near the top of the settings: a "Watch motion" dropdown, preference `motion` = `orbit` (floating, the camera orbits), `hang3d` (held by the ring, in 3D) or `hang2d` (held by the ring, in 2D), pushed with `__lock.setMotion(m)` by `Watch3D.applyFlat`; the older `threeD` boolean is honoured when `motion` is unset, and `setFlat` remains as an alias. Held in 3D: the swing group (pivot at the ring, Euler order XZY so the twist never moves the body off gravity) also tilts in depth (`psi`, a spring toward `atan2(-gz,-gy)`, clamped 0.7 rad) and twists about the ring (`yaw`: each change of the phone's heading, measured from the device x axis which is level whether the phone is upright or flat, kicks it the other way, then the torsion spring `-1.2*yaw - 1.6*vyaw` unwinds it over a few seconds), and `phiTarget` becomes the true 3D angle `atan2(gx, hypot(gy,gz))`; the camera stays at identity as in 2D. Verified with pretend turns through `page-eval.py`; note that DevTools evaluation sees the page's `var` names and `__lock`, not its `let`/`const` names, so probe through `var`s (`psi`, `yaw`, `psiTarget`, `phiTarget`, `hang3d`). Held in 2D (`hang2d`; the camera stays at identity and the watch is a pendulum: `retarget()` derives gravity on the screen from the absolute orientation into `phiTarget`, and the generator swaps the bow's rock spring in `step()` for a softer, wider spring toward it that pulls the short way round (`atan2(sin, cos)` of the difference) with no limit since v0.0.61: `phi` wraps, `hangK` (a `var`) slackens the spring within about 7° of flat and ramps it to full by 45°, `pose()` moves `swingGroup.position` to `(-1.42 sin phi, 1.42 cos phi)` so the body stays put while the ring goes round it, and `__lock.hang()` reads the angle in degrees; a pretend test needs `testTurn(0,90,roll)` to stand a flat phone up first) and "Gyroscope" (off = `TiltBridge` never started; `__lock.gyroReset()` on the live switch-off). The user has had the gyroscope OFF at times, which makes `testTurn` a no-op (no sample, no baseline); check `tools/prefs-set.py` before reading a turn test. The lock screen's stay/fade clock lives in `LockScreenActivity` (arm/fadeOut/dark/wake on a Handler) and the page's `__lock.fade(s)`/`__lock.wake()` (a `#nightfall` veil; `dark` skips rendering in the loop wrapper); in 2D mode a native veil view does the same. To check the hold, read `dumpsys power` for the `SCREEN_BRIGHT_WAKE_LOCK 'WindowManager` line: present while the watch shows, gone once dark. **Edit preferences on the phone only with `tools/prefs-set.py`** (force-stops the app, pulls, edits, pushes): sed over adb shell once dropped the file's closing tag. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
+Current app version: **v0.0.62**. Since v0.0.62 the app is **Miniwatch** (`com.miniscreen.miniwatch`, preferences file `miniwatch`, page bridge `miniwatch`, env `MINIWATCH_DEVICE`); Minilock was its name from v0.0.11 to v0.0.61 and survives only in the old APK filenames and the GitHub repository name. `Watch3D.sync(web)` applies design, background, plate, text and 3D/2D; it runs on page load and in `onResume` of the lock screen and the preview, because the staged lock screen keeps its page across wakes (and Home leaves it alive). Wake on pickup: `LockService` arms sensor type 25 (`TYPE_PICK_UP_GESTURE`, hidden in the SDK; falls back to significant motion) with `requestTriggerSensor` on SCREEN_OFF and wakes the screen with a `SCREEN_BRIGHT_WAKE_LOCK | ACQUIRE_CAUSES_WAKEUP` lock held 1.5 s; `dumpsys sensorservice` shows the `0x01010013 ... LockService` registration after screen-off. The 2D pendulum sign: positive `swingGroup.rotation.z` moves the body to the right, so `phiTarget = +atan2(gx, -gy)`. Near the top of the settings: a "Watch motion" dropdown, preference `motion` = `orbit` (floating, the camera orbits), `hang3d` (held by the ring, in 3D) or `hang2d` (held by the ring, in 2D), pushed with `__lock.setMotion(m)` by `Watch3D.applyFlat`; the older `threeD` boolean is honoured when `motion` is unset, and `setFlat` remains as an alias. Held in 3D: the swing group (pivot at the ring, Euler order XZY so the twist never moves the body off gravity) also tilts in depth (`psi`, a spring toward `atan2(-gz,-gy)`, clamped 0.7 rad) and twists about the ring (`yaw`: each change of the phone's heading, measured from the device x axis which is level whether the phone is upright or flat, kicks it the other way, then the torsion spring `-1.2*yaw - 1.6*vyaw` unwinds it over a few seconds), and `phiTarget` becomes the true 3D angle `atan2(gx, hypot(gy,gz))`; the camera stays at identity as in 2D. Verified with pretend turns through `page-eval.py`; note that DevTools evaluation sees the page's `var` names and `__lock`, not its `let`/`const` names, so probe through `var`s (`psi`, `yaw`, `psiTarget`, `phiTarget`, `hang3d`). Held in 2D (`hang2d`; the camera stays at identity and the watch is a pendulum: `retarget()` derives gravity on the screen from the absolute orientation into `phiTarget`, and the generator swaps the bow's rock spring in `step()` for a softer, wider spring toward it that pulls the short way round (`atan2(sin, cos)` of the difference) with no limit since v0.0.61: `phi` wraps, `hangK` (a `var`) slackens the spring within about 7° of flat and ramps it to full by 45°, `pose()` moves `swingGroup.position` to `(-1.42 sin phi, 1.42 cos phi)` so the body stays put while the ring goes round it, and `__lock.hang()` reads the angle in degrees; a pretend test needs `testTurn(0,90,roll)` to stand a flat phone up first) and "Gyroscope" (off = `TiltBridge` never started; `__lock.gyroReset()` on the live switch-off). The user has had the gyroscope OFF at times, which makes `testTurn` a no-op (no sample, no baseline); check `tools/prefs-set.py` before reading a turn test. The lock screen's stay/fade clock lives in `LockScreenActivity` (arm/fadeOut/dark/wake on a Handler) and the page's `__lock.fade(s)`/`__lock.wake()` (a `#nightfall` veil; `dark` skips rendering in the loop wrapper); in 2D mode a native veil view does the same. To check the hold, read `dumpsys power` for the `SCREEN_BRIGHT_WAKE_LOCK 'WindowManager` line: present while the watch shows, gone once dark. **Edit preferences on the phone only with `tools/prefs-set.py`** (force-stops the app, pulls, edits, pushes): sed over adb shell once dropped the file's closing tag. Repo: <https://github.com/Charles0xhorizonxyz/Minilock> (public).
 
 ---
 
 ## What the app is
 
-Minilock is a native Android app (`com.miniscreen.minilock`, label **Minilock**) whose centre
+Miniwatch is a native Android app (`com.miniscreen.miniwatch`, label **Miniwatch**) whose centre
 piece is a **3D gold pocket watch**. The watch is a WebGL scene (three.js) that renders in a
 `WebView` from `app/src/main/assets/lock.html`. three.js is bundled in assets — the app holds
 **no INTERNET permission and makes no network calls**.
@@ -22,7 +22,7 @@ The watch appears on three surfaces, all through `Watch3D.view(...)`:
 - **LockScreenActivity** — a *stand-in* lock screen (see caveat below).
 
 There is also a **flat 2D Canvas dial** (`WatchView.java`) used by the screensaver
-(`MinilockDreamService`) and live wallpaper (`MiniscreenWallpaper`), because a DreamService /
+(`MiniwatchDreamService`) and live wallpaper (`MiniscreenWallpaper`), because a DreamService /
 WallpaperService surface **cannot host a WebView**. That flat dial is the *old* design and has
 not received the 3D work.
 
@@ -41,7 +41,7 @@ wordmark is MINISCREEN; the only surviving mentions are historical changelog row
    not answer pings, it is off the network; ask the user. The phone is a
    Pixel 7 (`panther`) running GrapheneOS — identify it by `ro.build.display.id`, and call it
    "the GrapheneOS phone", never "the Pixel".
-2. **Keep every build.** Copy each APK to `artifacts/Minilock-v<version>-debug.apk` and add a
+2. **Keep every build.** Copy each APK to `artifacts/Miniwatch-v<version>-debug.apk` and add a
    row to `artifacts/BUILDS.md`. Never overwrite. Gradle only keeps the newest output and
    `app/build/` is gitignored, so un-copied builds are lost.
 3. **Bump `versionName` in `app/build.gradle` every build.** The masthead shows the version, so
@@ -66,16 +66,16 @@ python tools/make-lock-asset.py
 
 # 5. install to the GrapheneOS phone ONLY
 "$ADB" connect $D
-"$ADB" -s $D install -r artifacts/Minilock-v<version>-debug.apk
+"$ADB" -s $D install -r artifacts/Miniwatch-v<version>-debug.apk
 
 # 6. launch and screenshot to verify
 "$ADB" -s $D shell input keyevent KEYCODE_WAKEUP
-"$ADB" -s $D shell am force-stop com.miniscreen.minilock
-"$ADB" -s $D shell am start -n com.miniscreen.minilock/.MainActivity
+"$ADB" -s $D shell am force-stop com.miniscreen.miniwatch
+"$ADB" -s $D shell am start -n com.miniscreen.miniwatch/.MainActivity
 "$ADB" -s $D exec-out screencap -p > out.png     # then Read out.png
 
 # check for crashes
-"$ADB" -s $D logcat -b crash -d -t 40 | grep -c minilock
+"$ADB" -s $D logcat -b crash -d -t 40 | grep -c miniwatch
 ```
 
 **Trigger the stand-in lock screen** (to test it): sleep then wake —
@@ -89,7 +89,7 @@ reproduces the camera gesture from adb. Since v0.0.42/44 flicks of the dial are 
 page's `maybeGesture` names them ("left1": one flick right to left from the front; "right2":
 one hard flick left to right that carries the watch two full turns, armed at release and
 decided frame by frame in `spinCheck` at 3.5 pi from where the finger landed) and calls
-`minilock.gesture(name)`; `Watch3D.view`
+`miniwatch.gesture(name)`; `Watch3D.view`
 takes an `onGesture` consumer that only `LockScreenActivity` passes, and `Gestures.perform`
 runs the user's choice from Prefs `g_left1`/`g_right2` (defaults unlock / camera; options none,
 unlock, camera, torch, app, alarms; two dropdown rows in the app). `__lock.face()` returns cos
@@ -232,7 +232,7 @@ in `tools/watch3d.html`, the source.
 
 The plate on the back of the watch (finish, movement toggles, counter at six) used to live only
 in the page, so it reset with every new page — that was the user's "the colour is not kept". The
-page now calls `minilock.put("plate", json)` (a `@JavascriptInterface` object added in
+page now calls `miniwatch.put("plate", json)` (a `@JavascriptInterface` object added in
 `Watch3D.view`) on any click or change inside `#plate`, and `Watch3D.restorePlate` pushes
 `__lock.setState(json)` on load, which drives the plate's own controls (clicks the swatch,
 dispatches `change` on the checkboxes) so the existing wiring applies it. Prefs key `plate`.
@@ -249,7 +249,7 @@ every 33 ms (`every=(state.sweep&&!state.ambient)?33:1000` in the loop), Custom 
 once a second; `TiltBridge` runs `GAME_ROTATION_VECTOR` at `SENSOR_DELAY_GAME` (50 Hz) and
 crosses into the page on every changed sample; staging the lock screen on SCREEN_OFF costs a
 page load each time the screen goes dark, then pauses. `tools/battery-report.py` prints the
-phone's own accounting since the last charge (screen-on time, estimated mAh per uid, Minilock's
+phone's own accounting since the last charge (screen-on time, estimated mAh per uid, Miniwatch's
 CPU/sensor/foreground time; nothing is reset) and `--sample 600` measures the live drain from
 the charge counter over ten minutes (unplugged, watch on screen). The user chose to measure
 for a couple of days before deciding on fixes; the candidates are a screen timeout on the lock
@@ -285,10 +285,10 @@ confirmed on-device (dial matched the phone's percent).
 | `WatchView.java` | The OLD flat 2D Canvas dial. Used by screensaver + wallpaper only. |
 | `tools/watch3d.html` | The 3D watch source (also a standalone browser artifact). |
 | `tools/make-lock-asset.py` | Transforms `watch3d.html` → `app/src/main/assets/lock.html`: bundles three.js, adds the viewport meta, strips page chrome, wraps the render loop with `applyCamera()` (the inner function must not be named `loop`, see item 1), adds the `window.__lock` bridge (`setQuat/setZoom/nudge/setCard/setBattery/setPlacement/testTurn/setDebug`). **Edit the watch here, then regenerate — never hand-edit `lock.html`.** |
-| `tools/page-eval.py` | Evaluates a JavaScript expression in the live WebView pages over DevTools. Finds the phone by mDNS and checks its build id (or takes `MINILOCK_DEVICE`). The verification channel that did not exist before v0.0.28. |
+| `tools/page-eval.py` | Evaluates a JavaScript expression in the live WebView pages over DevTools. Finds the phone by mDNS and checks its build id (or takes `MINIWATCH_DEVICE`). The verification channel that did not exist before v0.0.28. |
 | `tools/probe-carry.js` | Synthetic-pointer test of the ring carry, for `page-eval.py`. Template for testing any one-finger gesture without the screen. |
-| `tools/prefs-set.py` | Set or delete Minilock preferences on the phone safely (`key=value`, `key=-`). The only sanctioned way to edit them from adb. |
-| `tools/battery-report.py` | The phone's own battery accounting since the last charge with Minilock's line isolated; `--sample N` measures live drain from the charge counter. |
+| `tools/prefs-set.py` | Set or delete Miniwatch preferences on the phone safely (`key=value`, `key=-`). The only sanctioned way to edit them from adb. |
+| `tools/battery-report.py` | The phone's own battery accounting since the last charge with Miniwatch's line isolated; `--sample N` measures live drain from the charge counter. |
 
 The JS↔native bridge is `window.__lock`. Native calls it via
 `web.evaluateJavascript("window.__lock&&__lock.xxx(...)", null)`.

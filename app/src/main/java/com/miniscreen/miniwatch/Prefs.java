@@ -1,10 +1,10 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 
 final class Prefs {
-    static SharedPreferences get(Context c) { return c.getSharedPreferences("minilock", Context.MODE_PRIVATE); }
+    static SharedPreferences get(Context c) { return c.getSharedPreferences("miniwatch", Context.MODE_PRIVATE); }
     static int finish(Context c) { return get(c).getInt("finish", 0); }
     static boolean ambient(Context c) { return get(c).getBoolean("ambient", true); }
     static boolean sweep(Context c) { return get(c).getBoolean("sweep", true); }

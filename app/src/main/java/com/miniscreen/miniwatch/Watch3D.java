@@ -1,4 +1,4 @@
-package com.miniscreen.minilock;
+package com.miniscreen.miniwatch;
 
 import android.content.Context;
 import android.os.Build;
@@ -47,7 +47,7 @@ final class Watch3D {
         // The page cannot read preferences, so apply them once it exists.
         // The page saves the caseback plate (finish, movement, counter) through this. Only
         // annotated methods are reachable, and the page is a bundled asset that loads nothing.
-        web.addJavascriptInterface(new PlateStore(context, onGesture), "minilock");
+        web.addJavascriptInterface(new PlateStore(context, onGesture), "miniwatch");
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView v, String url) {
                 sync(v);

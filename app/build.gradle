@@ -1,13 +1,13 @@
 plugins { id 'com.android.application' }
 android {
-    namespace 'com.miniscreen.minilock'
+    namespace 'com.miniscreen.miniwatch'
     compileSdk 36
     defaultConfig {
-        applicationId 'com.miniscreen.minilock'
+        applicationId 'com.miniscreen.miniwatch'
         minSdk 26
         targetSdk 36
-        versionCode 61
-        versionName '0.0.61'
+        versionCode 62
+        versionName '0.0.62'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

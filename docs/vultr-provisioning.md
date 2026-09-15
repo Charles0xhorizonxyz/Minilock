@@ -22,13 +22,13 @@ To keep the source between sessions, take an **instance snapshot** before destro
 > - **Do not attach Block Storage.** The build must run on local NVMe.
 > - OS: **Ubuntu 24.04 LTS**
 > - Location: **Amsterdam, NL**
-> - Label: `minilock-aosp-build`
+> - Label: `miniwatch-aosp-build`
 > - Enable IPv6. Do not enable auto-backups — this machine is disposable.
 >
 > **Access**
 > - Add this SSH public key and allow root login by key only:
 >   `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINjpSLjVlrVZp/0Se522JSBAJ8UVl4rGkE0ZQdim5+4w vultr`
-> - Firewall group `minilock-build`: allow TCP 22 from my current IP only; deny everything else inbound.
+> - Firewall group `miniwatch-build`: allow TCP 22 from my current IP only; deny everything else inbound.
 >
 > Then tell me the instance's **public IPv4 address**, the exact plan chosen, the local disk size, and the hourly rate.
 
