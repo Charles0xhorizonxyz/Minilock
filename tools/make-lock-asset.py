@@ -134,11 +134,69 @@ sub("""function backdropTex(){
   rg.addColorStop(0,c0); rg.addColorStop(.38,c1);
   rg.addColorStop(.72,c2); rg.addColorStop(1,c3);""")
 
-# The text under the watch is light grey on the dark studio; on a light background it needs ink.
-sub("""txt(g,val&&text?val+"   "+text:(val||text),12,y,12.5,"#C6CED6",true,"left");""",
-    """txt(g,val&&text?val+"   "+text:(val||text),12,y,12.5,bgWhite>0.5?"#2A2F36":"#C6CED6",true,"left");""")
-sub("""0,y+6,9,"#6C7883",false,"center",.16);""",
-    """0,y+6,9,bgWhite>0.5?"#6E7680":"#6C7883",false,"center",.16);""")
+# The text under the watch was laid out for a desktop page: 12-point type scaled down to the
+# phone, and gold that never changed with the paper behind it, so on ivory or rose clay nothing
+# read. On the phone it is set at arm's-length sizes, ellipsized to the width, and every ink,
+# the gold included, is derived from the backdrop's luminance until it reads.
+sub("""function drawCard(g,F,d,rows){
+  txt(g,d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}).toUpperCase(),
+      0,18,13,F.gold,false,"center",.22);
+  if(rows.length){
+    line(g,-150,38,-14,38,rgba(F.gold,.28),.8);line(g,14,38,150,38,rgba(F.gold,.28),.8);
+    poly(g,[0,33,5,38,0,43,-5,38],rgba(F.gold,.55),null,0);
+  }
+  let y=66;
+  for(const [label,val,text] of rows){
+    txt(g,label,-12,y,8.5,rgba(F.gold,.85),false,"right",.20);
+    txt(g,val&&text?val+"   "+text:(val||text),12,y,12.5,"#C6CED6",true,"left");
+    y+=27;
+  }
+  txt(g,Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g," ").toUpperCase(),
+      0,y+6,9,"#6C7883",false,"center",.16);
+}""",
+"""/* The text under the watch, sized for a phone at arm's length and inked against whatever the
+   backdrop is: near-black on light paper, warm white on the dark studio, and the gold of the
+   accents pushed darker or lighter until it reads (a contrast of 4.5, the usual threshold). */
+function cardInk(F){
+  const L=bgWhite, dark=L<0.18;                    // below this, white text beats black
+  const ch=v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);};
+  const lum=c=>.2126*ch(c[0])+.7152*ch(c[1])+.0722*ch(c[2]);
+  const contrast=c=>{const a=lum(c);return (Math.max(a,L)+.05)/(Math.min(a,L)+.05);};
+  let g=hx(F.gold); const to=dark?[255,255,255]:[0,0,0];
+  for(let i=0;i<14&&contrast(g)<4.5;i++) g=g.map((v,k)=>v+(to[k]-v)*.12);
+  const hex=c=>"#"+c.map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");
+  return dark?{text:"#ECE7DD",muted:"#B4BCC4",accent:hex(g)}
+             :{text:"#1C2026",muted:"#4A525B",accent:hex(g)};
+}
+function ellipsize(g,s,max){
+  if(g.measureText(s).width<=max) return s;
+  while(s.length>1&&g.measureText(s+"…").width>max) s=s.slice(0,-1);
+  return s.replace(/\s+$/,"")+"…";
+}
+function drawCard(g,F,d,rows){
+  const ink=cardInk(F);
+  txt(g,d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}).toUpperCase(),
+      0,30,21,ink.accent,false,"center",.16);
+  if(rows.length){
+    line(g,-150,50,-14,50,rgba(ink.accent,.45),1);line(g,14,50,150,50,rgba(ink.accent,.45),1);
+    poly(g,[0,45,5,50,0,55,-5,50],rgba(ink.accent,.8),null,0);
+  }
+  let y=rows.length?88:48;
+  for(const [label,val,text] of rows){
+    txt(g,label,-92,y,12.5,ink.accent,false,"right",.18);
+    g.font="19px "+SERIF;
+    txt(g,ellipsize(g,val&&text?val+"   "+text:(val||text),300),-80,y,19,ink.text,true,"left");
+    y+=38;
+  }
+  txt(g,Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g," ").toUpperCase(),
+      0,y+8,12,ink.muted,false,"center",.14);
+}""")
+# The card's scale: the design width, tempered by the viewport's height so the small hero in the
+# app is not swallowed by it; and the taller rows.
+sub("""  const k=w/440, dpr=Math.min(window.devicePixelRatio||1,2);
+  const hgt=Math.round((rows.length?66+rows.length*27+18:44)*k);""",
+    """  const k=(w/440)*Math.max(0.72,Math.min(1,(window.innerHeight||900)/900)), dpr=Math.min(window.devicePixelRatio||1,2);
+  const hgt=Math.round((rows.length?88+rows.length*38+14:74)*k);""")
 
 sub("""  requestAnimationFrame(loop);
 }
